@@ -39,6 +39,9 @@ output directories, prompt prose in Python, or secret values in responses/logs/v
 **Scale/Scope**: One active local reviewer, one QM file and one workbook per review, three
 structured OpenAI calls, two output workbooks per completed review
 
+**Provider Settings**: `OPENAI_API_KEY`, `OPENAI_MODEL`, and validated
+`OPENAI_TEMPERATURE` (default `0.0`, range `0.0` through `2.0`)
+
 ## Constitution Check
 
 *GATE: Passed before Phase 0 research and re-checked after Phase 1 design.*
@@ -79,9 +82,7 @@ templates/
 ├── index.html
 ├── styles.css
 └── app.js
-src/mrm_review/
-├── __init__.py
-├── __main__.py
+src/
 ├── cli.py
 ├── api.py
 ├── config.py
@@ -90,14 +91,18 @@ src/mrm_review/
 ├── output_writer.py
 ├── openai_connection.py
 ├── ai_reviewer.py
-├── workflow.py
-└── prompts/
+├── prompt_loader.py
+└── workflow.py
+prompts/
+├── use_case.yml
+├── use_case_refinement.yml
+└── metric_review.yml
 ```
 
-**Structure Decision**: Keep the existing single Python package and single HTML UI. Replace the
-mixed `file_io.py` with one input module and one output module, and move client construction out
-of `ai_reviewer.py`. HTTP-specific upload objects stay in `api.py`; business modules receive only
-Pydantic values and paths. The old `Input/` runtime convention is removed from the review flow.
+**Structure Decision**: Keep focused Python modules directly under `src/` and the single HTML UI.
+Root `prompts/` owns provider prose and `prompt_loader.py` is its only loader. Input and output
+remain separate modules, and client construction stays outside `ai_reviewer.py`. HTTP-specific
+upload objects stay in `api.py`; business modules receive only Pydantic values and paths.
 
 ## Complexity Tracking
 

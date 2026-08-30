@@ -5,7 +5,7 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
-from mrm_review.schemas import (
+from schemas import (
     DeveloperMetric,
     MetricCatalogItem,
     MetricCategory,

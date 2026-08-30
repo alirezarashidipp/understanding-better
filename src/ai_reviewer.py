@@ -2,8 +2,8 @@ import json
 
 from openai import OpenAI
 
-from mrm_review.prompts import load_prompt
-from mrm_review.schemas import (
+from prompt_loader import load_prompt
+from schemas import (
     ClarificationAnswer,
     MetricCatalogItem,
     MetricCategory,
@@ -20,9 +20,10 @@ METRIC_REVIEW_PROMPT = load_prompt("metric_review.yml")
 
 
 class OpenAIReviewer:
-    def __init__(self, client: OpenAI, model: str) -> None:
+    def __init__(self, client: OpenAI, model: str, temperature: float) -> None:
         self.client = client
         self.model = model
+        self.temperature = temperature
 
     def create_draft(
         self,
@@ -35,6 +36,7 @@ class OpenAIReviewer:
         }
         response = self.client.responses.parse(
             model=self.model,
+            temperature=self.temperature,
             store=False,
             instructions=USE_CASE_PROMPT,
             input=json.dumps(payload, ensure_ascii=False),
@@ -57,6 +59,7 @@ class OpenAIReviewer:
         }
         response = self.client.responses.parse(
             model=self.model,
+            temperature=self.temperature,
             store=False,
             instructions=USE_CASE_REFINEMENT_PROMPT,
             input=json.dumps(payload, ensure_ascii=False),
@@ -80,6 +83,7 @@ class OpenAIReviewer:
         }
         response = self.client.responses.parse(
             model=self.model,
+            temperature=self.temperature,
             store=False,
             instructions=METRIC_REVIEW_PROMPT,
             input=json.dumps(payload, ensure_ascii=False),

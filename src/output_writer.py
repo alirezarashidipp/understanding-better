@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from openpyxl import Workbook
 
-from mrm_review.schemas import ExpectedMetric, FieldAssessment, MetricReview, OutputPair
+from schemas import ExpectedMetric, FieldAssessment, MetricReview, OutputPair
 
 
 def write_review_outputs(

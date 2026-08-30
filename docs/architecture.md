@@ -31,17 +31,20 @@ selected QM-*.txt + selected MRM_*.xlsx
 
 ## Module Boundaries
 
+Production Python modules live directly under root `src/`. Provider prompts live under root
+`prompts/`; there is no additional application package directory.
+
 - `config.py` reads and validates local runtime configuration.
 - `schemas.py` defines all data exchanged between modules and OpenAI.
 - `input_reader.py` reads and validates the selected QM file, workbook, and approved catalog.
 - `output_writer.py` creates and stores the paired Excel outputs without overwriting old reviews.
 - `openai_connection.py` constructs the OpenAI client and owns authentication wiring.
-- `prompts/` contains the versioned OpenAI instructions as YAML files.
+- `prompt_loader.py` validates and loads versioned YAML instructions from root `prompts/`.
 - `ai_reviewer.py` sends the three structured requests to the OpenAI Responses API.
 - `workflow.py` makes the application data flow explicit and enforces metric guardrails.
 - `api.py` converts HTTP forms into workflow calls and renders the result.
 - Root `templates/` contains the HTML page, stylesheet, and JavaScript.
-- `cli.py`, `__main__.py`, and root `main.py` provide standard execution paths.
+- `cli.py` and root `main.py` provide the standard execution paths.
 
 ## Guardrails
 

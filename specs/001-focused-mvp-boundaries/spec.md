@@ -144,6 +144,8 @@ the same three structured review operations can run without changes to business 
   MUST NOT require a database or user authentication.
 - **FR-014**: Existing validated review behavior and catalog guardrails MUST remain unchanged
   unless explicitly modified by this specification.
+- **FR-015**: The system MUST load one OpenAI temperature from local configuration, validate it
+  from `0.0` through `2.0`, default it to `0.0`, and apply it to all three structured calls.
 
 ### Key Entities
 
@@ -176,6 +178,7 @@ the same three structured review operations can run without changes to business 
   version-controlled files during the complete review flow.
 - **SC-008**: A maintainer can trace the main flow from selected inputs to downloads through a
   small set of clearly owned responsibilities without encountering pass-through layers.
+- **SC-009**: All three OpenAI calls receive the same validated configured temperature.
 
 ## Assumptions
 

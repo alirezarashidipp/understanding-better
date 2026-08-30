@@ -8,8 +8,9 @@
 .\.venv\Scripts\python.exe main.py
 ```
 
-Set `OPENAI_API_KEY` and `OPENAI_MODEL` in the process environment or local ignored
-`.env.local`. Open `http://127.0.0.1:8000`.
+Set `OPENAI_API_KEY`, `OPENAI_MODEL`, and optionally `OPENAI_TEMPERATURE` in the process
+environment or local ignored `.env.local`. Temperature defaults to `0.0` and accepts values from
+`0.0` through `2.0`. Open `http://127.0.0.1:8000`.
 
 ## Happy-path smoke scenario
 

@@ -1,8 +1,8 @@
 from typing import Protocol
 
-from mrm_review.input_reader import read_review_package
-from mrm_review.output_writer import write_review_outputs
-from mrm_review.schemas import (
+from input_reader import read_review_package
+from output_writer import write_review_outputs
+from schemas import (
     CatalogSelection,
     ClarificationAnswer,
     CompletedReview,

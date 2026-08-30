@@ -26,7 +26,7 @@ This is a small local FastAPI MVP that supports an MRM reviewer with use-case un
 - Limit questions for each reviewed field to three.
 - Write absent required metrics only to the current `Output/missing_metrics_<id>.xlsx` file.
 - Never print, log, return, or commit `OPENAI_API_KEY`.
-- Load `OPENAI_API_KEY` and `OPENAI_MODEL` only from the environment or `.env.local`.
+- Load `OPENAI_API_KEY`, `OPENAI_MODEL`, and `OPENAI_TEMPERATURE` only from the environment or `.env.local`.
 
 ## OpenAI flow
 
@@ -36,8 +36,8 @@ This is a small local FastAPI MVP that supports an MRM reviewer with use-case un
 
 ## Architecture
 
-- Keep production code under `src/mrm_review/`.
-- Keep provider prompts as version-controlled `.yml` files under `src/mrm_review/prompts/` and load them through `prompts/__init__.py`; do not inline provider prompt prose in Python.
+- Keep production modules directly under `src/`; do not add a redundant package directory.
+- Keep provider prompts as version-controlled `.yml` files under root `prompts/` and load them through `src/prompt_loader.py`; do not inline provider prompt prose in Python.
 - Keep Pydantic contracts in `schemas.py`.
 - Keep input reading and validation in `input_reader.py` and output workbook creation and
   storage in `output_writer.py`.

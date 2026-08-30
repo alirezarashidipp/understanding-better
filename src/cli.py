@@ -11,7 +11,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(app_path: str = "mrm_review.api:create_app", factory: bool = True) -> None:
+def main(app_path: str = "api:create_app", factory: bool = True) -> None:
     arguments = build_parser().parse_args()
     uvicorn.run(
         app_path,

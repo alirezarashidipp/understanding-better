@@ -11,16 +11,25 @@ requires-python = ">=3.11"
 dynamic = ["dependencies"]
 
 [project.scripts]
-mrm-review = "mrm_review.cli:main"
+mrm-review = "cli:main"
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-mrm_review = ["prompts/*.yml"]
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = [
+    "ai_reviewer",
+    "api",
+    "cli",
+    "config",
+    "input_reader",
+    "openai_connection",
+    "output_writer",
+    "prompt_loader",
+    "schemas",
+    "workflow",
+]
 
 [tool.ruff]
 line-length = 100

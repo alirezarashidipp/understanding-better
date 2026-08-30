@@ -44,8 +44,9 @@ directory internally. The app creates no upload copy and closes received parts a
 
 ## OpenAI connection boundary
 
-**Decision**: `config.py` reads `OPENAI_API_KEY` and `OPENAI_MODEL` from the environment or
-`.env.local`. `openai_connection.py` exposes one concrete function,
+**Decision**: `config.py` reads `OPENAI_API_KEY`, `OPENAI_MODEL`, and `OPENAI_TEMPERATURE` from the
+environment or `.env.local`. Temperature defaults to `0.0`, is validated from `0.0` through `2.0`,
+and is passed unchanged to all three structured calls. `openai_connection.py` exposes one concrete function,
 `create_openai_client(settings) -> OpenAI`. `api.py` composes settings, client, and
 `OpenAIReviewer`; `ai_reviewer.py` contains no environment or authentication logic.
 

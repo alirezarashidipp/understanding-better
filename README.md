@@ -12,9 +12,7 @@ templates/
 ├── index.html
 ├── styles.css
 └── app.js
-src/mrm_review/
-├── __init__.py
-├── __main__.py
+src/
 ├── cli.py
 ├── api.py
 ├── config.py
@@ -23,8 +21,12 @@ src/mrm_review/
 ├── output_writer.py
 ├── openai_connection.py
 ├── ai_reviewer.py
-├── workflow.py
-└── prompts/
+├── prompt_loader.py
+└── workflow.py
+prompts/
+├── use_case.yml
+├── use_case_refinement.yml
+└── metric_review.yml
 ```
 
 شرح کامل مرز ماژول‌ها در [docs/architecture.md](docs/architecture.md) قرار دارد.
@@ -41,7 +43,8 @@ implementation و convergence عبور می‌کند. این فرایند نبا
 - دقیقاً یک فایل `QM-*.txt` که Reviewer داخل صفحه انتخاب می‌کند
 - دقیقاً یک فایل `MRM_*.xlsx` که Reviewer داخل صفحه انتخاب می‌کند
 - فایل catalog در `metrics/metrics.md`
-- تنظیمات `OPENAI_API_KEY` و `OPENAI_MODEL` در environment یا `.env.local`
+- تنظیمات `OPENAI_API_KEY`، `OPENAI_MODEL` و `OPENAI_TEMPERATURE` در environment یا `.env.local`
+- مقدار پیش‌فرض `OPENAI_TEMPERATURE` برابر `0.0` است و باید بین `0.0` و `2.0` باشد
 
 فایل‌های انتخاب‌شده در `Input/` کپی نمی‌شوند. برنامه فقط همان دو فایل همان Review را می‌خواند.
 
@@ -63,9 +66,9 @@ implementation و convergence عبور می‌کند. این فرایند نبا
 
 ## Prompt as YAML
 
-- `src/mrm_review/prompts/use_case.yml`: فهم Use Case و حداکثر چهار سؤال
-- `src/mrm_review/prompts/use_case_refinement.yml`: توضیح نهایی و Flow از نگاه MRM
-- `src/mrm_review/prompts/metric_review.yml`: انتخاب Metrics و بررسی مستقل Objective و Formula
+- `prompts/use_case.yml`: فهم Use Case و حداکثر چهار سؤال
+- `prompts/use_case_refinement.yml`: توضیح نهایی و Flow از نگاه MRM
+- `prompts/metric_review.yml`: انتخاب Metrics و بررسی مستقل Objective و Formula
 
 هر Prompt یک `version` ثابت و یک فیلد `instructions` دارد و قابل review و version control است.
 
@@ -86,12 +89,12 @@ python -m venv .venv
 
 ## اجرا
 
-هر سه روش معتبر هستند:
+روش‌های معتبر اجرا:
 
 ```powershell
 .\.venv\Scripts\python.exe main.py
-.\.venv\Scripts\python.exe -m mrm_review
 .\.venv\Scripts\uvicorn.exe main:app --host 127.0.0.1 --port 8000
+mrm-review
 ```
 
 سپس `http://127.0.0.1:8000` را باز کنید. مستندات API در `http://127.0.0.1:8000/api/docs` و health check در `/health` است.

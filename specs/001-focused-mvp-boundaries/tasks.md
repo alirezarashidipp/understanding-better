@@ -13,7 +13,7 @@ verification checkpoint using compile, lint, in-memory fakes, route inspection, 
 
 **Purpose**: Confirm the planned migration fits the existing local project.
 
-- [X] T001 Verify dependencies, ignore rules, and the live source tree against `requirements.txt`, `.gitignore`, and `src/mrm_review/`
+- [X] T001 Verify dependencies, ignore rules, and the live source tree against `requirements.txt`, `.gitignore`, and `src/`
 
 ---
 
@@ -21,7 +21,7 @@ verification checkpoint using compile, lint, in-memory fakes, route inspection, 
 
 **Purpose**: Define the small shared values needed by the input and output seams.
 
-- [X] T002 Add uploaded package, output pair, completed review, and revised path contracts in `src/mrm_review/schemas.py`
+- [X] T002 Add uploaded package, output pair, completed review, and revised path contracts in `src/schemas.py`
 
 **Checkpoint**: Shared Pydantic contracts are importable without adding architectural layers.
 
@@ -35,11 +35,11 @@ verification checkpoint using compile, lint, in-memory fakes, route inspection, 
 missing, misnamed, empty, corrupt, malformed, or duplicate input stops before the fake reviewer is
 called.
 
-- [X] T003 [US1] Implement the single review-package parsing boundary in `src/mrm_review/input_reader.py`
-- [X] T004 [US1] Change the workflow entry to accept selected upload values in `src/mrm_review/workflow.py`
-- [X] T005 [US1] Add the two-file multipart transport and upload cleanup in `src/mrm_review/api.py`
+- [X] T003 [US1] Implement the single review-package parsing boundary in `src/input_reader.py`
+- [X] T004 [US1] Change the workflow entry to accept selected upload values in `src/workflow.py`
+- [X] T005 [US1] Add the two-file multipart transport and upload cleanup in `src/api.py`
 - [X] T006 [US1] Render required QM and workbook file controls in `templates/index.html`
-- [X] T007 [US1] Run deterministic valid/invalid upload checks without provider calls or test files against `src/mrm_review/input_reader.py` and `src/mrm_review/api.py`
+- [X] T007 [US1] Run deterministic valid/invalid upload checks without provider calls or test files against `src/input_reader.py` and `src/api.py`
 
 **Checkpoint**: User Story 1 works without reading review inputs from `Input/`.
 
@@ -52,8 +52,8 @@ called.
 **Independent Test**: A fake reviewer completes zero-question and skipped-question flows and does
 not perform metric review before the `OK` submission.
 
-- [X] T008 [US2] Preserve the explicit refinement and metric guardrails around the new boundaries in `src/mrm_review/workflow.py`
-- [X] T009 [US2] Run a deterministic fake-reviewer HTTP flow through `/start`, `/refine`, and `/review` without creating test files in `src/mrm_review/api.py`
+- [X] T008 [US2] Preserve the explicit refinement and metric guardrails around the new boundaries in `src/workflow.py`
+- [X] T009 [US2] Run a deterministic fake-reviewer HTTP flow through `/start`, `/refine`, and `/review` without creating test files in `src/api.py`
 
 **Checkpoint**: The established MRM control flow is unchanged.
 
@@ -66,10 +66,10 @@ not perform metric review before the `OK` submission.
 **Independent Test**: Two completions create four direct children of a temporary `Output/`, each
 pair shares one identifier, and the first pair bytes remain unchanged.
 
-- [X] T010 [US3] Implement paired in-memory workbook creation and exclusive storage in `src/mrm_review/output_writer.py`
-- [X] T011 [US3] Return `CompletedReview` with one `OutputPair` from `src/mrm_review/workflow.py`
-- [X] T012 [US3] Validate generated download names and render returned links in `src/mrm_review/api.py` and `templates/index.html`
-- [X] T013 [US3] Run deterministic two-review output and download checks without creating test files against `src/mrm_review/output_writer.py` and `src/mrm_review/api.py`
+- [X] T010 [US3] Implement paired in-memory workbook creation and exclusive storage in `src/output_writer.py`
+- [X] T011 [US3] Return `CompletedReview` with one `OutputPair` from `src/workflow.py`
+- [X] T012 [US3] Validate generated download names and render returned links in `src/api.py` and `templates/index.html`
+- [X] T013 [US3] Run deterministic two-review output and download checks without creating test files against `src/output_writer.py` and `src/api.py`
 
 **Checkpoint**: Earlier output files remain intact and no review subdirectory exists.
 
@@ -84,11 +84,11 @@ safe actionable provider errors.
 reviewer requires no environment settings, and representative provider failures render no raw
 provider details or credentials.
 
-- [X] T014 [US4] Clarify environment-or-local-file configuration errors in `src/mrm_review/config.py`
-- [X] T015 [US4] Add the concrete OpenAI client constructor in `src/mrm_review/openai_connection.py`
-- [X] T016 [US4] Remove settings and client construction from `src/mrm_review/ai_reviewer.py`
-- [X] T017 [US4] Compose the default reviewer and map safe provider messages for every review stage in `src/mrm_review/api.py`
-- [X] T018 [US4] Run deterministic construction and provider-error checks without credentials or test files against `src/mrm_review/openai_connection.py` and `src/mrm_review/api.py`
+- [X] T014 [US4] Clarify environment-or-local-file configuration errors in `src/config.py`
+- [X] T015 [US4] Add the concrete OpenAI client constructor in `src/openai_connection.py`
+- [X] T016 [US4] Remove settings and client construction from `src/ai_reviewer.py`
+- [X] T017 [US4] Compose the default reviewer and map safe provider messages for every review stage in `src/api.py`
+- [X] T018 [US4] Run deterministic construction and provider-error checks without credentials or test files against `src/openai_connection.py` and `src/api.py`
 
 **Checkpoint**: Authentication construction is independently replaceable without a provider
 factory or wrapper.
@@ -99,7 +99,7 @@ factory or wrapper.
 
 **Purpose**: Remove the stale combined seam, align documentation, and verify the integrated MVP.
 
-- [X] T019 Remove the superseded combined module `src/mrm_review/file_io.py` after all imports move
+- [X] T019 Remove the superseded combined module `src/file_io.py` after all imports move
 - [X] T020 [P] Update usage and output naming in `README.md`
 - [X] T021 [P] Update runtime flow and module ownership in `docs/architecture.md`
 - [X] T022 Run Ruff, compilation, import, dependency, route, deterministic harness, and live HTTP smoke checks from `specs/001-focused-mvp-boundaries/quickstart.md`
@@ -134,3 +134,14 @@ factory or wrapper.
 
 No task adds a database, authentication, repository/service layer, provider factory, background
 job, or automated test file.
+
+---
+
+## Phase 8: Flat Source and Temperature
+
+- [X] T023 Move focused production modules directly under `src/` and remove `src/mrm_review/`
+- [X] T024 Move provider YAML files to root `prompts/` and create `src/prompt_loader.py`
+- [X] T025 Add validated `OPENAI_TEMPERATURE` configuration and pass it to all three calls in `src/config.py`, `src/ai_reviewer.py`, and `src/api.py`
+- [X] T026 Update flat-module packaging and execution paths in `pyproject.toml`, `main.py`, and `src/cli.py`
+- [X] T027 Align `AGENTS.md`, `README.md`, `docs/architecture.md`, and active Spec Kit artifacts with the flat layout
+- [X] T028 Run deterministic verification, restart the server, commit, and push `main`

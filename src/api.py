@@ -19,17 +19,17 @@ from openai import (
 )
 from starlette.datastructures import UploadFile
 
-from mrm_review.ai_reviewer import OpenAIReviewer
-from mrm_review.config import AppSettings
-from mrm_review.openai_connection import create_openai_client
-from mrm_review.schemas import (
+from ai_reviewer import OpenAIReviewer
+from config import AppSettings
+from openai_connection import create_openai_client
+from schemas import (
     ClarificationAnswer,
     PendingReview,
     ReadyForMetricReview,
     ReviewPaths,
     UploadedFileData,
 )
-from mrm_review.workflow import AIReviewer, finish_review, refine_review, start_review
+from workflow import AIReviewer, finish_review, refine_review, start_review
 
 logger = logging.getLogger(__name__)
 DOWNLOAD_NAME = re.compile(r"(?:mrm_review|missing_metrics)_[0-9a-f]{32}\.xlsx")
@@ -43,7 +43,11 @@ def create_app(
     if reviewer is None:
         settings = AppSettings.from_env(project_root)
         client = create_openai_client(settings)
-        active_reviewer = OpenAIReviewer(client=client, model=settings.openai_model)
+        active_reviewer = OpenAIReviewer(
+            client=client,
+            model=settings.openai_model,
+            temperature=settings.openai_temperature,
+        )
     else:
         active_reviewer = reviewer
     templates = Jinja2Templates(directory=str(project_root / "templates"))

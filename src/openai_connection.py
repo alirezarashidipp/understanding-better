@@ -1,6 +1,6 @@
 from openai import OpenAI
 
-from mrm_review.config import AppSettings
+from config import AppSettings
 
 
 def create_openai_client(settings: AppSettings) -> OpenAI:
