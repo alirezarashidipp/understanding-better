@@ -51,6 +51,12 @@ Production Python modules live directly under root `src/`. Provider prompts live
 - Category, subcategory, application, and Metric names come only from `metrics/metrics.md`.
 - A selected subcategory and application must belong to the selected category.
 - AI-expected Metric names must belong to the selected category.
+- An invalid structured result receives at most one repair call with validation feedback;
+  provider connection and billing failures are never automatically retried by this loop.
+- Catalog and developer names are matched case-insensitively and normalized to their source
+  spelling before display or output.
+- Original developer Objective and Formula values remain server-owned and are joined into the
+  workbook by `output_writer.py`; OpenAI does not echo them in structured output.
 - Metric outputs are not written until the reviewer selects `OK` after seeing the refined understanding.
 - Every developer metric must receive exactly one independent Test Objective and Formula assessment.
 - Original developer values cannot be changed before validation.
@@ -58,3 +64,5 @@ Production Python modules live directly under root `src/`. Provider prompts live
 - Only generated `mrm_review_<id>.xlsx` and `missing_metrics_<id>.xlsx` files directly under
   `Output/` can be downloaded.
 - Review state is process-local and intentionally non-durable for this local MVP.
+- Failed refinement and metric-review requests retain that process-local state and re-render the
+  current stage for manual retry.

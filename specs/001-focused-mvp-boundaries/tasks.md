@@ -145,3 +145,15 @@ job, or automated test file.
 - [X] T026 Update flat-module packaging and execution paths in `pyproject.toml`, `main.py`, and `src/cli.py`
 - [X] T027 Align `AGENTS.md`, `README.md`, `docs/architecture.md`, and active Spec Kit artifacts with the flat layout
 - [X] T028 Run deterministic verification, restart the server, commit, and push `main`
+
+---
+
+## Phase 9: Structured Output Resilience
+
+- [X] T029 Add one bounded repair attempt with validation feedback for all three stages in `src/workflow.py`, `src/ai_reviewer.py`, and root `prompts/`
+- [X] T030 Keep failed refinement and review stages retryable in `src/api.py` and `templates/index.html`
+- [X] T031 Remove developer Objective/Formula echo fields and join original values during output creation in `src/schemas.py`, `src/workflow.py`, `src/output_writer.py`, and `prompts/metric_review.yml`
+- [X] T032 Canonicalize catalog and developer Metric names with case-insensitive matching in `src/workflow.py`
+- [X] T033 Remove the fragile sentence-count validator and invented catalog guidance in `src/schemas.py` and `src/input_reader.py`
+- [X] T034 Update active documentation and run deterministic invalid-first/valid-second, same-stage retry, canonicalization, and workbook-content checks
+- [X] T035 Run final lint, compile, dependency, import, route, and HTTP smoke checks; restart, commit, and push `main`

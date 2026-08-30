@@ -159,14 +159,32 @@ def create_app(
             )
         except OpenAIError as error:
             message, status_code = _provider_error(error)
-            return render_error(request, message, status_code=status_code)
+            return render_page(
+                request,
+                "questions",
+                status_code=status_code,
+                error=message,
+                review_id=review_id,
+                draft=pending.draft,
+            )
         except (ValueError, RuntimeError) as error:
-            return render_error(request, str(error))
+            return render_page(
+                request,
+                "questions",
+                status_code=400,
+                error=str(error),
+                review_id=review_id,
+                draft=pending.draft,
+            )
         except Exception:
             logger.exception("Use-case refinement failed")
-            return render_error(
+            return render_page(
                 request,
-                "The final MRM understanding could not be created. Please try again.",
+                "questions",
+                status_code=500,
+                error="The final MRM understanding could not be created. Please try again.",
+                review_id=review_id,
+                draft=pending.draft,
             )
 
     @app.post("/review", response_class=HTMLResponse, name="review")
@@ -189,14 +207,32 @@ def create_app(
             )
         except OpenAIError as error:
             message, status_code = _provider_error(error)
-            return render_error(request, message, status_code=status_code)
+            return render_page(
+                request,
+                "understanding",
+                status_code=status_code,
+                error=message,
+                review_id=review_id,
+                refined=ready.refined,
+            )
         except (ValueError, RuntimeError) as error:
-            return render_error(request, str(error))
+            return render_page(
+                request,
+                "understanding",
+                status_code=400,
+                error=str(error),
+                review_id=review_id,
+                refined=ready.refined,
+            )
         except Exception:
             logger.exception("Metric review failed")
-            return render_error(
+            return render_page(
                 request,
-                "The metric review could not be completed. Please try again.",
+                "understanding",
+                status_code=500,
+                error="The metric review could not be completed. Please try again.",
+                review_id=review_id,
+                refined=ready.refined,
             )
 
     @app.get("/download/{name}", name="download")

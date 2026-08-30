@@ -24,6 +24,11 @@ environment or local ignored `.env.local`. Temperature defaults to `0.0` and acc
 8. Complete a second review and confirm `Output/` now contains four distinct `.xlsx` files directly
    under the directory. Each pair must share its 32-character identifier and the first pair must be
    unchanged.
+9. With a fake reviewer, return one invalid result followed by a valid result at each provider
+   stage. Confirm exactly two calls, non-empty repair feedback on the second call, canonical source
+   spelling, and original developer Objective/Formula values in the generated workbook.
+10. Make both automatic attempts fail during refinement and metric review. Confirm the same stage
+    is rendered with its existing `review_id`, then retry manually without uploading files again.
 
 ## Invalid-input smoke scenario
 

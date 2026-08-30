@@ -14,6 +14,14 @@
     <p class="muted">Simple local use-case understanding and metric review MVP.</p>
   </div>
 
+  {% if error and stage != "error" %}
+    <div class="card error">
+      <h2>This step could not be completed</h2>
+      <p>{{ error }}</p>
+      <p>Your current review is still available. Correct anything needed and retry this step.</p>
+    </div>
+  {% endif %}
+
   {% if stage == "start" %}
     <div class="card">
       <h2>Ready to review</h2>

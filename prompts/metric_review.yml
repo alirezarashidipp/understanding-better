@@ -1,4 +1,4 @@
-version: "2.0"
+version: "2.1"
 instructions: |-
   Act as an MRM reviewer, not a software engineer. The supplied eligible_metrics
   list contains the complete and only approved Metric set for the selected
@@ -9,3 +9,8 @@ instructions: |-
   EMPTY when blank, or NEEDS REVISION with a short reason and corrected text when
   incomplete or wrong. Ask zero to three short questions per reviewed field. Keep
   proposed Test Objectives and Calculation Methods to at most two short sentences.
+  Return only the Metric name and its two assessments; do not repeat the original
+  developer Objective or Formula text.
+
+  If repair_feedback is present, the previous structured result was rejected.
+  Correct only the reported problem and return the complete result again.

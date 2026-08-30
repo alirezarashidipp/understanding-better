@@ -146,6 +146,17 @@ the same three structured review operations can run without changes to business 
   unless explicitly modified by this specification.
 - **FR-015**: The system MUST load one OpenAI temperature from local configuration, validate it
   from `0.0` through `2.0`, default it to `0.0`, and apply it to all three structured calls.
+- **FR-016**: Each review stage MUST retry an invalid structured provider result at most once with
+  concise validation feedback, while provider connection, authentication, and billing failures
+  MUST NOT trigger an automatic repair call.
+- **FR-017**: A failed refinement or metric-review attempt MUST keep the current process state and
+  render the same stage so the reviewer can retry without uploading the source files again.
+- **FR-018**: Catalog selections and Metric names MUST be matched case-insensitively and normalized
+  to the exact canonical spelling parsed from `metrics/metrics.md` or the developer workbook.
+- **FR-019**: Structured provider output MUST NOT repeat original developer Objective or Formula
+  text that is already owned by the server.
+- **FR-020**: Soft prose-length guidance and catalog-only payload fields MUST NOT reject otherwise
+  structurally valid output or inject invented catalog guidance.
 
 ### Key Entities
 
@@ -179,6 +190,13 @@ the same three structured review operations can run without changes to business 
 - **SC-008**: A maintainer can trace the main flow from selected inputs to downloads through a
   small set of clearly owned responsibilities without encountering pass-through layers.
 - **SC-009**: All three OpenAI calls receive the same validated configured temperature.
+- **SC-010**: A first invalid structured result causes exactly one repair attempt, and a second
+  invalid result stops without further automatic calls.
+- **SC-011**: Refinement and metric-review failures leave their current stage available for retry.
+- **SC-012**: Case-only differences in provider catalog values resolve to canonical source values.
+- **SC-013**: Generated review workbooks retain the original developer Objective and Formula even
+  though those values are absent from provider output.
+- **SC-014**: The provider catalog payload contains only values parsed from `metrics/metrics.md`.
 
 ## Assumptions
 

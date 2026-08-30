@@ -74,6 +74,12 @@ Return value of `workflow.finish_review()`.
 
 No completed review is stored in memory; the output files are the durable result.
 
+## MetricReview
+
+The provider returns the developer Metric name and two independent field assessments. Original
+Objective and Formula values are not provider-output fields; `output_writer.py` joins them from
+`PendingReview.developer_metrics` after workflow validation and canonical name matching.
+
 ## State transitions
 
 ```text
@@ -87,5 +93,6 @@ uploaded parts
 - Invalid upload or catalog: stop before `PendingReview` and before OpenAI.
 - `PendingReview` to `ReadyForMetricReview`: happens on `Next`, including skipped/no questions.
 - `ReadyForMetricReview` to `CompletedReview`: happens only on exact `OK` form action.
-- Provider or output failure: current unfinished state remains available for a retry in the running
-  process.
+- Invalid structured provider output: one automatic repair attempt with validation feedback.
+- Provider, second-validation, or output failure: current refinement/review state remains available
+  for a manual retry in the running process.

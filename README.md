@@ -64,6 +64,10 @@ implementation و convergence عبور می‌کند. این فرایند نبا
 5. پس از `Next`، توضیح نهایی و Flow از نگاه MRM نمایش داده می‌شود.
 6. فقط بعد از زدن `OK`، Metrics همان دسته بررسی و فایل‌های Excel نوشته می‌شوند.
 
+اگر خروجی ساختاریافتهٔ OpenAI نامعتبر باشد، همان مرحله فقط یک بار با توضیح خطا به‌صورت خودکار
+اصلاح می‌شود. اگر تلاش دوم نیز نامعتبر باشد، مرحلهٔ جاری برای Retry دستی باقی می‌ماند؛ در مراحل
+`Next` و `OK` نیازی به آپلود دوبارهٔ فایل‌ها نیست.
+
 ## Prompt as YAML
 
 - `prompts/use_case.yml`: فهم Use Case و حداکثر چهار سؤال
@@ -71,6 +75,10 @@ implementation و convergence عبور می‌کند. این فرایند نبا
 - `prompts/metric_review.yml`: انتخاب Metrics و بررسی مستقل Objective و Formula
 
 هر Prompt یک `version` ثابت و یک فیلد `instructions` دارد و قابل review و version control است.
+
+نام‌های catalog بدون حساسیت به حروف تطبیق داده می‌شوند، اما همیشه با املای دقیق
+`metrics/metrics.md` نمایش داده و ذخیره می‌شوند. متن اصلی Objective و Formula از Excel توسط سرور
+نگه داشته می‌شود و از مدل خواسته نمی‌شود آن را در پاسخ تکرار کند.
 
 ## نصب
 

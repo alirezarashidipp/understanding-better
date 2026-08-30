@@ -27,6 +27,12 @@ This is a small local FastAPI MVP that supports an MRM reviewer with use-case un
 - Write absent required metrics only to the current `Output/missing_metrics_<id>.xlsx` file.
 - Never print, log, return, or commit `OPENAI_API_KEY`.
 - Load `OPENAI_API_KEY`, `OPENAI_MODEL`, and `OPENAI_TEMPERATURE` only from the environment or `.env.local`.
+- Give an invalid structured result at most one repair call with concise validation feedback;
+  never automatically repair provider authentication, billing, rate-limit, or connection errors.
+- Keep original developer Objective and Formula values server-owned; do not require OpenAI to
+  echo them in structured output.
+- Match returned catalog values case-insensitively, then normalize them to exact source spelling.
+- Preserve the current refinement or metric-review stage after failure so it can be retried.
 
 ## OpenAI flow
 

@@ -1,12 +1,11 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class MetricCatalogItem(BaseModel):
     name: str
-    guidance: str = ""
 
 
 class MetricCategory(BaseModel):
@@ -34,15 +33,6 @@ class ExpectedMetric(BaseModel):
     test_objective: str
     calculation_method: str
 
-    @field_validator("test_objective", "calculation_method")
-    @classmethod
-    def keep_explanation_short(cls, value: str) -> str:
-        sentence_count = sum(value.count(mark) for mark in ".?!")
-        if sentence_count > 2:
-            raise ValueError("Use at most two short sentences.")
-        return value
-
-
 class FieldAssessment(BaseModel):
     status: Literal["OK", "IT IS EMPTY", "NEEDS REVISION"]
     reason: str = ""
@@ -62,8 +52,6 @@ class FieldAssessment(BaseModel):
 
 class MetricReview(BaseModel):
     metric: str
-    developer_test_objective: str = ""
-    developer_calculation_method: str = ""
     test_objective_assessment: FieldAssessment
     calculation_method_assessment: FieldAssessment
 

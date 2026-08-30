@@ -29,11 +29,15 @@ class OpenAIReviewer:
         self,
         source_text: str,
         catalog: list[MetricCategory],
+        *,
+        repair_feedback: str = "",
     ) -> UseCaseDraft:
         payload = {
             "source_text": source_text,
             "approved_catalog": [item.model_dump(mode="json") for item in catalog],
         }
+        if repair_feedback:
+            payload["repair_feedback"] = repair_feedback
         response = self.client.responses.parse(
             model=self.model,
             temperature=self.temperature,
@@ -43,13 +47,15 @@ class OpenAIReviewer:
             text_format=UseCaseDraft,
         )
         if response.output_parsed is None:
-            raise RuntimeError("OpenAI did not return a valid use-case draft.")
+            raise ValueError("OpenAI did not return a valid use-case draft.")
         return response.output_parsed
 
     def refine_use_case(
         self,
         pending: PendingReview,
         answers: list[ClarificationAnswer],
+        *,
+        repair_feedback: str = "",
     ) -> RefinedUseCase:
         payload = {
             "source_text": pending.source_text,
@@ -57,6 +63,8 @@ class OpenAIReviewer:
             "clarification_answers": [answer.model_dump(mode="json") for answer in answers],
             "approved_catalog": [category.model_dump(mode="json") for category in pending.catalog],
         }
+        if repair_feedback:
+            payload["repair_feedback"] = repair_feedback
         response = self.client.responses.parse(
             model=self.model,
             temperature=self.temperature,
@@ -66,13 +74,15 @@ class OpenAIReviewer:
             text_format=RefinedUseCase,
         )
         if response.output_parsed is None:
-            raise RuntimeError("OpenAI did not return a valid refined use case.")
+            raise ValueError("OpenAI did not return a valid refined use case.")
         return response.output_parsed
 
     def review_metrics(
         self,
         ready: ReadyForMetricReview,
         eligible_metrics: list[MetricCatalogItem],
+        *,
+        repair_feedback: str = "",
     ) -> MetricReviewResult:
         payload = {
             "refined_use_case": ready.refined.model_dump(mode="json"),
@@ -81,6 +91,8 @@ class OpenAIReviewer:
                 metric.model_dump(mode="json") for metric in ready.pending.developer_metrics
             ],
         }
+        if repair_feedback:
+            payload["repair_feedback"] = repair_feedback
         response = self.client.responses.parse(
             model=self.model,
             temperature=self.temperature,
@@ -90,5 +102,5 @@ class OpenAIReviewer:
             text_format=MetricReviewResult,
         )
         if response.output_parsed is None:
-            raise RuntimeError("OpenAI did not return a valid metric review.")
+            raise ValueError("OpenAI did not return a valid metric review.")
         return response.output_parsed

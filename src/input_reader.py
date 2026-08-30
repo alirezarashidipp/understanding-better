@@ -230,10 +230,7 @@ def _build_metric_category(
         name=name,
         subcategories=subcategories,
         applications=applications,
-        metrics=[
-            MetricCatalogItem(name=metric, guidance=f"Approved under {name}")
-            for metric in metric_names
-        ],
+        metrics=[MetricCatalogItem(name=metric) for metric in metric_names],
     )
 
 

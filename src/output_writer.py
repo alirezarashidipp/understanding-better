@@ -4,16 +4,17 @@ from uuid import uuid4
 
 from openpyxl import Workbook
 
-from schemas import ExpectedMetric, FieldAssessment, MetricReview, OutputPair
+from schemas import DeveloperMetric, ExpectedMetric, FieldAssessment, MetricReview, OutputPair
 
 
 def write_review_outputs(
     *,
     output_dir: Path,
+    developer_metrics: list[DeveloperMetric],
     metric_reviews: list[MetricReview],
     missing_metrics: list[ExpectedMetric],
 ) -> OutputPair:
-    review_bytes = _review_workbook_bytes(metric_reviews)
+    review_bytes = _review_workbook_bytes(metric_reviews, developer_metrics)
     missing_bytes = _missing_metrics_workbook_bytes(missing_metrics)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -60,12 +61,16 @@ def _remove_created_files(paths: list[Path]) -> None:
         path.unlink(missing_ok=True)
 
 
-def _review_workbook_bytes(rows: list[MetricReview]) -> bytes:
+def _review_workbook_bytes(
+    rows: list[MetricReview],
+    developer_metrics: list[DeveloperMetric],
+) -> bytes:
+    developer_by_name = {metric.name.casefold(): metric for metric in developer_metrics}
     values = [
         [
             row.metric,
-            row.developer_test_objective,
-            row.developer_calculation_method,
+            developer_by_name[row.metric.casefold()].test_objective,
+            developer_by_name[row.metric.casefold()].calculation_method,
             _validation_text(row.test_objective_assessment),
             row.test_objective_assessment.revised,
             _questions_text(row.test_objective_assessment.questions),

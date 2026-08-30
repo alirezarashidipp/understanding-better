@@ -61,3 +61,8 @@ Provider failures render the page error state without a raw provider body or cre
 - temporary rate limit: retry shortly;
 - timeout or connection failure: check connection and retry;
 - other provider status failure: provider request failed and may be retried.
+
+Provider failures do not trigger an automatic repair call. An invalid structured result receives
+one automatic repair attempt. If both structured attempts fail during refinement or metric review,
+the response re-renders that same stage with its existing `review_id` and an actionable retry
+message.

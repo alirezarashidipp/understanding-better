@@ -121,3 +121,23 @@ flow and keep only unfinished draft/refined states in process memory.
 
 **Rationale**: Background queues, concurrency infrastructure, session persistence, and retention
 jobs solve problems outside the approved scope.
+
+## Invalid structured output recovery
+
+**Decision**: `workflow.py` retries each provider stage at most once when a structured result or
+catalog guardrail raises `ValueError`. The second call receives the short validation error as a
+`repair_feedback` payload field. OpenAI/provider failures remain outside this loop. Refinement and
+metric-review HTTP errors render their existing stage while retaining process-local state.
+
+**Rationale**: This addresses observed model-format failures without adding LangGraph, background
+jobs, persistent sessions, or an unbounded retry mechanism.
+
+## Server-owned developer text and canonical names
+
+**Decision**: Provider metric rows contain only the Metric name and two assessments. The output
+writer joins those rows to the original developer metrics already held by the server. Catalog and
+developer names are matched with `casefold()` and then rewritten to their exact source spelling.
+The catalog payload contains only names actually parsed from `metrics.md`.
+
+**Rationale**: The model no longer spends tokens copying authoritative input, whitespace changes
+cannot invalidate a review, and every displayed or written name retains its approved spelling.

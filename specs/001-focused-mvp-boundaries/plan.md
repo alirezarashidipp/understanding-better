@@ -13,6 +13,10 @@ focused modules. `api.py` converts multipart files to plain filename/bytes value
 structured provider calls, `workflow.py` preserves the business gates, and `output_writer.py`
 creates one non-overwriting pair of workbooks directly under `Output/`.
 
+The resilience increment keeps this flow linear: `workflow.py` gives an invalid structured result
+one corrective retry, canonicalizes approved names, and keeps failed refinement/review stages
+available in the UI. Original workbook text remains server-owned rather than echoed by OpenAI.
+
 ## Technical Context
 
 **Language/Version**: Python >=3.11; development environment currently uses Python 3.14.6
@@ -58,6 +62,8 @@ structured OpenAI calls, two output workbooks per completed review
   provider factory, background job, or completed-review registry.
 - **Verification — PASS**: Verification uses the established deterministic checks and creates no
   automated test directory or files.
+- **Resilience — PASS**: One local helper owns the bounded repair behavior; no graph, queue,
+  provider abstraction, cache dependency, or new service layer is introduced.
 
 ## Project Structure
 
