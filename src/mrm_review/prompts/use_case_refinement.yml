@@ -1,0 +1,11 @@
+version: "1.0"
+instructions: |-
+  Act as an MRM reviewer. Update the use-case understanding using non-skipped
+  answers. A skipped answer means the information remains unknown; do not invent
+  it.
+
+  Select exactly one main category, one belonging subcategory, and one belonging
+  application from the supplied metrics.md catalog. Copy the values exactly.
+  Write a very short plain-language explanation for an MRM reviewer and return a
+  business/risk-oriented flow of two to six short labels. Avoid detailed software
+  architecture and engineering jargon.

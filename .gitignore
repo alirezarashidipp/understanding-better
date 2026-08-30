@@ -1,0 +1,18 @@
+.env
+.env.*
+!.env.example
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Keep only the approved metric catalog in Git.
+metrics/*
+!metrics/metrics.md
+
+# Keep the folders, but never commit their runtime contents.
+Output/*
+!Output/.gitkeep
+Input/*
+!Input/.gitkeep

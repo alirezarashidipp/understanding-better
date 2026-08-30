@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MRM Model Review</title>
+  <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+  <script src="{{ url_for('static', path='/app.js') }}" defer></script>
+</head>
+<body>
+<main>
+  <div class="card">
+    <h1>MRM Model Review</h1>
+    <p class="muted">Simple local use-case understanding and metric review MVP.</p>
+  </div>
+
+  {% if stage == "start" %}
+    <div class="card">
+      <h2>Ready to review</h2>
+      <p>Select the QM text file and developer metric workbook for this review.</p>
+      <form method="post" action="{{ url_for('start') }}" enctype="multipart/form-data">
+        <label for="qm_file">QM source file (QM-*.txt)</label>
+        <input id="qm_file" name="qm_file" type="file" accept=".txt" required>
+        <label for="workbook_file">Developer workbook (MRM_*.xlsx)</label>
+        <input id="workbook_file" name="workbook_file" type="file" accept=".xlsx" required>
+        <button type="submit">Start Review</button>
+      </form>
+    </div>
+  {% elif stage == "questions" %}
+    <div class="card">
+      <h2>Current understanding</h2>
+      <p><strong>Business use case:</strong> {{ draft.use_case.business_use_case }}</p>
+      <p><strong>System type:</strong> {{ draft.use_case.system_type }}</p>
+      <p><strong>Main category:</strong> {{ draft.use_case.catalog_selection.main_category }}</p>
+      <p><strong>Main subcategory:</strong> {{ draft.use_case.catalog_selection.subcategory }}</p>
+      <p><strong>Closest application:</strong> {{ draft.use_case.catalog_selection.closest_application }}</p>
+      <p><strong>Understanding confidence:</strong> {{ draft.understanding_confidence }}%</p>
+      <p><strong>Flow:</strong> {{ draft.use_case.input }} → {{ draft.use_case.processing }} → {{ draft.use_case.output }}</p>
+    </div>
+    <form method="post" action="{{ url_for('refine') }}">
+      <input type="hidden" name="review_id" value="{{ review_id }}">
+      {% if draft.questions %}
+      {% for question in draft.questions %}
+        <div class="card">
+          <label for="answer_{{ question.id }}">{{ question.question }}</label>
+          <input id="answer_{{ question.id }}" name="answer_{{ question.id }}" type="text">
+          <label class="skip"><input name="skip_{{ question.id }}" type="checkbox"> Skip</label>
+        </div>
+      {% endfor %}
+      {% else %}
+        <div class="card">
+          <p>The TXT contains enough information. No clarification questions are needed.</p>
+        </div>
+      {% endif %}
+      <button type="submit">Next</button>
+    </form>
+  {% elif stage == "understanding" %}
+    <div class="card">
+      <h2>Final MRM understanding</h2>
+      <p>{{ refined.mrm_explanation }}</p>
+      <p><strong>Business use case:</strong> {{ refined.use_case.business_use_case }}</p>
+      <p><strong>System type:</strong> {{ refined.use_case.system_type }}</p>
+      <p><strong>Main category:</strong> {{ refined.use_case.catalog_selection.main_category }}</p>
+      <p><strong>Main subcategory:</strong> {{ refined.use_case.catalog_selection.subcategory }}</p>
+      <p><strong>Closest application:</strong> {{ refined.use_case.catalog_selection.closest_application }}</p>
+      <div class="flow" aria-label="Simple business and risk flow">
+        {% for node in refined.diagram %}
+          <span class="node">{{ node }}</span>{% if not loop.last %}<span>→</span>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    <form method="post" action="{{ url_for('review') }}">
+      <input type="hidden" name="review_id" value="{{ review_id }}">
+      <button type="submit">OK</button>
+    </form>
+  {% elif stage == "result" %}
+    <div class="card">
+      <h2>MRM summary</h2>
+      <p>{{ refined.mrm_explanation }}</p>
+      <p><strong>System type:</strong> {{ refined.use_case.system_type }}</p>
+      <p><strong>Main category:</strong> {{ refined.use_case.catalog_selection.main_category }}</p>
+      <div class="flow" aria-label="Simple business flow">
+        {% for node in refined.diagram %}
+          <span class="node">{{ node }}</span>{% if not loop.last %}<span>→</span>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <h2>Metric review</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Metric</th><th>Test Objective Validation</th><th>Formula Validation</th></tr>
+          </thead>
+          <tbody>
+          {% for row in result.metric_reviews %}
+            <tr>
+              <td>{{ row.metric }}</td>
+              <td class="status">{{ row.test_objective_assessment.status }}</td>
+              <td class="status">{{ row.calculation_method_assessment.status }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="actions">
+        <a class="button" href="{{ url_for('download', name=outputs.missing_metrics_file.name) }}">Missing Metrics</a>
+        <a class="button" href="{{ url_for('download', name=outputs.review_file.name) }}">MRM Review</a>
+      </p>
+    </div>
+  {% elif stage == "error" %}
+    <div class="card error">
+      <h2>Review could not continue</h2>
+      <p>{{ error }}</p>
+      <a class="button" href="{{ url_for('index') }}">Back</a>
+    </div>
+  {% endif %}
+</main>
+</body>
+</html>

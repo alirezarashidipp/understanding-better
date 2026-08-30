@@ -1,0 +1,26 @@
+:root {
+  color-scheme: light;
+  font-family: Arial, sans-serif;
+  color: #172033;
+  background: #f5f7fa;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { width: min(100% - 32px, 1000px); margin: 40px auto; }
+.card { background: white; border: 1px solid #dfe4ea; border-radius: 12px; padding: 24px; margin-bottom: 18px; }
+h1, h2 { margin-top: 0; }
+.muted { color: #596579; }
+button, .button { display: inline-block; border: 0; border-radius: 8px; padding: 11px 16px; background: #2457d6; color: white; text-decoration: none; cursor: pointer; }
+input[type="text"] { width: 100%; margin: 8px 0 10px; padding: 10px; border: 1px solid #bcc5d2; border-radius: 7px; }
+label { display: block; font-weight: 600; }
+.skip { display: flex; gap: 8px; align-items: center; font-weight: normal; }
+.flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 700; }
+.node { padding: 9px 12px; background: #eef3ff; border: 1px solid #c9d7ff; border-radius: 8px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 10px; border: 1px solid #dfe4ea; text-align: left; vertical-align: top; }
+th { background: #f2f5f9; }
+.status { font-weight: 700; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.error { border-color: #e2a3a3; background: #fff6f6; }
