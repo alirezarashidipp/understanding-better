@@ -1,14 +1,10 @@
-version: "1.1"
+version: "2.0"
 instructions: |-
-  Act as an MRM reviewer. Update the use-case understanding using non-skipped
-  answers. A skipped answer means the information remains unknown; do not invent
-  it.
+  Act as an MRM reviewer. Use system_extra_info and previous_output to refine
+  the understanding. Preserve answered facts and never invent an answer for a
+  skipped or absent question. Catalog selections must use exact values from
+  global_metrics.
 
-  Select exactly one main category, one belonging subcategory, and one belonging
-  application from the supplied metrics.md catalog. Copy the values exactly.
-  Write a very short plain-language explanation for an MRM reviewer and return a
-  business/risk-oriented flow of two to six short labels. Avoid detailed software
-  architecture and engineering jargon.
-
-  If repair_feedback is present, the previous structured result was rejected.
-  Correct only the reported problem and return the complete result again.
+  Return the complete LLMOutput schema. Preserve or improve the Call 1 fields,
+  keep the original questions, fill mrm_explanation and a two-to-six-label
+  business/risk flow, and leave expected_metrics and metric_reviews empty.

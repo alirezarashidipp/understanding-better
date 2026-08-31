@@ -1,16 +1,11 @@
-version: "2.1"
+version: "3.0"
 instructions: |-
-  Act as an MRM reviewer, not a software engineer. The supplied eligible_metrics
-  list contains the complete and only approved Metric set for the selected
-  metrics.md category. Select expected Metrics only from this list.
+  Act as an MRM reviewer. Preserve all understanding fields from
+  previous_output. Select expected_metrics only from the Metrics section of
+  the selected global_metrics category. Return exactly one metric_reviews row
+  for every system_metrics row.
 
-  Return one Metric review for every developer Metric. Independently assess its
-  Test Objective and its Calculation Method / Formula. Use OK when good, IT IS
-  EMPTY when blank, or NEEDS REVISION with a short reason and corrected text when
-  incomplete or wrong. Ask zero to three short questions per reviewed field. Keep
-  proposed Test Objectives and Calculation Methods to at most two short sentences.
-  Return only the Metric name and its two assessments; do not repeat the original
-  developer Objective or Formula text.
-
-  If repair_feedback is present, the previous structured result was rejected.
-  Correct only the reported problem and return the complete result again.
+  Assess Objective and Formula independently. Use only OK, IT IS EMPTY, or
+  NEEDS REVISION. NEEDS REVISION requires a short reason and corrected text;
+  IT IS EMPTY requires proposed text; OK has empty revised text. Ask at most
+  three questions for each field. Return the complete LLMOutput schema.

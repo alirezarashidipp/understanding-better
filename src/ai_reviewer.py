@@ -3,20 +3,11 @@ import json
 from openai import OpenAI
 
 from prompt_loader import load_prompt
-from schemas import (
-    ClarificationAnswer,
-    MetricCatalogItem,
-    MetricCategory,
-    MetricReviewResult,
-    PendingReview,
-    ReadyForMetricReview,
-    RefinedUseCase,
-    UseCaseDraft,
-)
+from schemas import LLMInput, LLMOutput
 
-USE_CASE_PROMPT = load_prompt("use_case.yml")
-USE_CASE_REFINEMENT_PROMPT = load_prompt("use_case_refinement.yml")
-METRIC_REVIEW_PROMPT = load_prompt("metric_review.yml")
+CALL_1_PROMPT = load_prompt("use_case.yml")
+CALL_2_PROMPT = load_prompt("use_case_refinement.yml")
+CALL_3_PROMPT = load_prompt("metric_review.yml")
 
 
 class OpenAIReviewer:
@@ -25,82 +16,27 @@ class OpenAIReviewer:
         self.model = model
         self.temperature = temperature
 
-    def create_draft(
-        self,
-        source_text: str,
-        catalog: list[MetricCategory],
-        *,
-        repair_feedback: str = "",
-    ) -> UseCaseDraft:
-        payload = {
-            "source_text": source_text,
-            "approved_catalog": [item.model_dump(mode="json") for item in catalog],
-        }
-        if repair_feedback:
-            payload["repair_feedback"] = repair_feedback
-        response = self.client.responses.parse(
-            model=self.model,
-            temperature=self.temperature,
-            store=False,
-            instructions=USE_CASE_PROMPT,
-            input=json.dumps(payload, ensure_ascii=False),
-            text_format=UseCaseDraft,
-        )
-        if response.output_parsed is None:
-            raise ValueError("OpenAI did not return a valid use-case draft.")
-        return response.output_parsed
+    def call_1(self, data: LLMInput, *, repair_feedback: str = "") -> LLMOutput:
+        return self._request(CALL_1_PROMPT, data, repair_feedback)
 
-    def refine_use_case(
-        self,
-        pending: PendingReview,
-        answers: list[ClarificationAnswer],
-        *,
-        repair_feedback: str = "",
-    ) -> RefinedUseCase:
-        payload = {
-            "source_text": pending.source_text,
-            "draft": pending.draft.model_dump(mode="json"),
-            "clarification_answers": [answer.model_dump(mode="json") for answer in answers],
-            "approved_catalog": [category.model_dump(mode="json") for category in pending.catalog],
-        }
-        if repair_feedback:
-            payload["repair_feedback"] = repair_feedback
-        response = self.client.responses.parse(
-            model=self.model,
-            temperature=self.temperature,
-            store=False,
-            instructions=USE_CASE_REFINEMENT_PROMPT,
-            input=json.dumps(payload, ensure_ascii=False),
-            text_format=RefinedUseCase,
-        )
-        if response.output_parsed is None:
-            raise ValueError("OpenAI did not return a valid refined use case.")
-        return response.output_parsed
+    def call_2(self, data: LLMInput, *, repair_feedback: str = "") -> LLMOutput:
+        return self._request(CALL_2_PROMPT, data, repair_feedback)
 
-    def review_metrics(
-        self,
-        ready: ReadyForMetricReview,
-        eligible_metrics: list[MetricCatalogItem],
-        *,
-        repair_feedback: str = "",
-    ) -> MetricReviewResult:
-        payload = {
-            "refined_use_case": ready.refined.model_dump(mode="json"),
-            "eligible_metrics": [metric.model_dump(mode="json") for metric in eligible_metrics],
-            "developer_metrics": [
-                metric.model_dump(mode="json") for metric in ready.pending.developer_metrics
-            ],
-        }
+    def call_3(self, data: LLMInput, *, repair_feedback: str = "") -> LLMOutput:
+        return self._request(CALL_3_PROMPT, data, repair_feedback)
+
+    def _request(self, prompt: str, data: LLMInput, repair_feedback: str) -> LLMOutput:
+        instructions = prompt
         if repair_feedback:
-            payload["repair_feedback"] = repair_feedback
+            instructions += f"\n\nPrevious output validation error: {repair_feedback}"
         response = self.client.responses.parse(
             model=self.model,
             temperature=self.temperature,
             store=False,
-            instructions=METRIC_REVIEW_PROMPT,
-            input=json.dumps(payload, ensure_ascii=False),
-            text_format=MetricReviewResult,
+            instructions=instructions,
+            input=json.dumps(data.model_dump(mode="json", by_alias=True), ensure_ascii=False),
+            text_format=LLMOutput,
         )
         if response.output_parsed is None:
-            raise ValueError("OpenAI did not return a valid metric review.")
+            raise ValueError("OpenAI did not return a valid structured result.")
         return response.output_parsed
