@@ -9,7 +9,7 @@ QM-*.txt + MRM_*.xlsx + metrics/metrics.md
                     ↓
                  LLMInput
                     ↓
-       Call 1 → Call 2 اختیاری → OK → Call 3
+       Call 1 → Call 2 اختیاری → Call 3 → OK → Call 4
                     ↓
                  LLMOutput
                     ↓
@@ -21,12 +21,12 @@ QM-*.txt + MRM_*.xlsx + metrics/metrics.md
 - `user_input_reader.py`: خواندن TXT و سه ستون Excel
 - `metric_catalog_reader.py`: خواندن متن خام `metrics.md` و parse حداقلی برای validation
 - `schemas.py`: تعریف `LLMInput`، `LLMOutput` و ردیف‌های ساده آن‌ها
-- `ai_reviewer.py`: سه فراخوانی OpenAI با schema یکسان
-- `workflow.py`: ترتیب خطی سه مرحله و validation
+- `ai_reviewer.py`: ساخت OpenAI client و چهار فراخوانی با schema یکسان
+- `workflow.py`: سه Runnable از `langchain-core` برای مدیریت چهار Call و validation
 - `api.py`: routeها و state موقت داخل process
 - `templates/`: صفحه ساده برنامه
 
-Promptها در سه فایل YAML زیر `prompts/` هستند و داخل کد Python نوشته نشده‌اند.
+Promptهای چهار Call در چهار فایل YAML زیر `prompts/` هستند و داخل کد Python نوشته نشده‌اند.
 
 ## ورودی‌ها
 
@@ -48,10 +48,11 @@ Promptها در سه فایل YAML زیر `prompts/` هستند و داخل کد
 
 1. Call 1 اطلاعات اصلی، catalog کامل و metrics فایل Excel را می‌گیرد و درک اولیه، confidence و صفر تا چهار سؤال را برمی‌گرداند.
 2. Reviewer می‌تواند سؤال‌ها را جواب دهد یا Skip کند. اگر هیچ جواب واقعی وجود نداشته باشد، Call 2 اجرا نمی‌شود.
-3. نتیجه فعلی نمایش داده می‌شود. فقط دکمه‌ای با متن دقیق `OK` Call 3 را شروع می‌کند.
-4. Call 3 expected metrics و بررسی مستقل Objective و Formula را برمی‌گرداند.
+3. Call 3 همیشه آخرین درک موجود را می‌گیرد و توضیح نهایی محصول و Flow را از نگاه MRM می‌سازد.
+4. نتیجه Call 3 در مرورگر نمایش داده می‌شود. فقط دکمه‌ای با متن دقیق `OK` Call 4 را شروع می‌کند.
+5. Call 4 برای metricهای فایل Excel بازخورد مستقل Objective و Formula می‌دهد و metricهای تکمیلی catalog را پیشنهاد می‌کند.
 
-هر سه Call همان `LLMInput` و `LLMOutput` را استفاده می‌کنند. فیلدهای مرحله‌های آینده تا زمان
+هر چهار Call همان `LLMInput` و `LLMOutput` را استفاده می‌کنند. فیلدهای مرحله‌های آینده تا زمان
 خود آن مرحله خالی می‌مانند. خروجی نامعتبر فقط یک repair attempt می‌گیرد؛ خطاهای provider مثل
 authentication، billing، rate limit و connection به‌صورت خودکار repair نمی‌شوند.
 

@@ -19,7 +19,10 @@ This is a small local FastAPI MVP that supports an MRM reviewer with use-case un
 - Ask zero to four use-case questions only when they materially improve system understanding and always support Skip.
 - Run Call 2 only when at least one non-blank, non-skipped answer exists.
 - When Call 2 is skipped, carry the Call 1 result forward unchanged.
+- Run Call 3 after every successful refinement submission, whether Call 2 ran or was skipped.
+- Use Call 3 to create the final MRM explanation and flow shown before `OK`.
 - Start metric review only after a button labelled exactly `OK` is selected.
+- Use Call 4 to review workbook metrics and propose additional catalog metrics.
 - Never accept an AI-expected Metric outside the selected catalog category.
 - Assess Test Objective and Calculation Method / Formula independently.
 - Use only `OK`, `IT IS EMPTY`, or `NEEDS REVISION` for field status.
@@ -38,7 +41,8 @@ This is a small local FastAPI MVP that supports an MRM reviewer with use-case un
 
 1. Call 1 sends exact QM text, exact `metrics.md` Markdown, and the three-column workbook rows.
 2. Call 2 sends answered question/answer pairs and the previous output; skip it when no answer exists.
-3. After exact `OK`, Call 3 returns expected metrics and independent Objective and Formula assessments for browser display.
+3. Call 3 always receives the latest understanding and creates the final MRM explanation and flow.
+4. After exact `OK`, Call 4 returns expected metrics and independent Objective and Formula assessments for browser display.
 
 All calls use the same top-level `LLMInput` and `LLMOutput` schemas. Fields owned by later calls stay empty until that call.
 
@@ -49,9 +53,8 @@ All calls use the same top-level `LLMInput` and `LLMOutput` schemas. Fields owne
 - Keep Pydantic contracts in `schemas.py`.
 - Keep user TXT/workbook reading in `user_input_reader.py` and raw catalog reading plus internal
   validation parsing in `metric_catalog_reader.py`.
-- Keep OpenAI client construction and authentication in `openai_connection.py`; changing the
-  supported authentication mechanism must not require changes to review logic.
-- Keep OpenAI calls in `ai_reviewer.py` and orchestration in `workflow.py`.
+- Keep OpenAI client construction and all four OpenAI calls in `ai_reviewer.py`.
+- Keep the three HTTP-stage `langchain-core` runnables and review guardrails in `workflow.py`.
 - Keep FastAPI routes in `api.py` and execution arguments in `cli.py`.
 - Keep frontend assets together under root `templates/`: `index.html`, `styles.css`, and `app.js`.
 - Keep the existing `create_app()` FastAPI application factory; do not add repository, service, factory abstraction, database, authentication, or multi-agent layers.
