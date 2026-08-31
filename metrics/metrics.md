@@ -1,15 +1,15 @@
 ## 1. **Non-Agentic**
 
 * **Main Subcategories**
-
   * Prompt-Based LLM
   * RAG
   * Search + Generation
   * Classification / Extraction
   * Summarization
   * Structured Generation
-* **Applications**
 
+
+* **Exmaples**
   * Q&A
   * Search
   * Summarization
@@ -18,7 +18,6 @@
   * Document Analysis
 
 * **Metrics**
-
   * Accuracy
   * Precision
   * Recall
@@ -35,15 +34,15 @@
 ## 2. **AI Agents**
 
 * **Main Subcategories**
-
   * Tool-Using Agents
   * Conversational Agents
   * Coding Agents
   * Research Agents
   * Data Agents
   * Computer-Use Agents
-* **Applications**
 
+
+* **Exmaples**
   * Q&A + Tools
   * Coding
   * Web Research
@@ -52,7 +51,6 @@
   * Browser Tasks
 
 * **Metrics**
-
   * Task Success Rate
   * Tool Accuracy
   * Action Accuracy
@@ -69,15 +67,14 @@
 ## 3. **Agentic Workflows**
 
 * **Main Subcategories**
-
   * Sequential Workflows
   * Routing Workflows
   * Parallel Workflows
   * Planning Workflows
   * Human-in-the-Loop
   * Evaluator / Optimizer
-* **Applications**
 
+* **Exmaples**
   * Customer Support
   * Document Processing
   * Software Development
@@ -87,7 +84,6 @@
 
 
 * **Metrics**
-
   * Workflow Success Rate
   * Step Success Rate
   * End-to-End Accuracy
@@ -99,7 +95,7 @@
   * Cost
   * Throughput
 
----
+
 
 ## 4. **Autonomous Systems**
 
@@ -111,8 +107,8 @@
   * Goal-Driven Agents
   * Memory-Based Agents
   * Environment-Interacting Agents
-* **Applications**
 
+* **Exmaples**
   * Autonomous Research
   * Software Engineering
   * Operations
@@ -122,7 +118,6 @@
 
 
 * **Metrics**
-
   * Goal Completion Rate
   * Plan Success Rate
   * Autonomy Rate
@@ -139,15 +134,14 @@
 ## 5. **Interacting Self-Directing Autonomous Systems**
 
 * **Main Subcategories**
-
   * Multi-Agent Collaboration
   * Multi-Agent Debate
   * Delegation Systems
   * Hierarchical Agents
   * Competitive Agents
   * Negotiation Agents
-* **Applications**
 
+* **Exmaples**
   * Collaborative Research
   * Software Teams
   * Simulation
@@ -156,7 +150,6 @@
   * Complex Decision Making
 
 * **Metrics**
-
   * Team Success Rate
   * Coordination Accuracy
   * Delegation Accuracy
@@ -168,20 +161,19 @@
   * Completion Time
   * Total Cost
 
----
+
 
 ## 6. **Self-Organizing Autonomous Ecosystems**
 
 * **Main Subcategories**
-
   * Agent Swarms
   * Dynamic Agent Networks
   * Self-Organizing Teams
   * Open Multi-Agent Systems
   * Agent Societies
   * Adaptive Agent Ecosystems
-* **Applications**
 
+* **Exmaples**
   * Large-Scale Simulation
   * Distributed Intelligence
   * Autonomous Enterprises
@@ -190,7 +182,6 @@
   * Complex System Optimization
 
 * **Metrics**
-
   * Collective Performance
   * Emergence Quality
   * Scalability

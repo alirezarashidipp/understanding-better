@@ -17,36 +17,38 @@ This is a small local FastAPI MVP that supports an MRM reviewer with use-case un
 - Select the main category, subcategory, closest application, and Metrics only from values parsed from `metrics.md`.
 - Require the initial use-case draft to include `understanding_confidence` as an integer from 0 to 100 and show it before clarification questions.
 - Ask zero to four use-case questions only when they materially improve system understanding and always support Skip.
-- Show the refined MRM explanation and flow after Next, even when every question is skipped or no question exists.
+- Run Call 2 only when at least one non-blank, non-skipped answer exists.
+- When Call 2 is skipped, carry the Call 1 result forward unchanged.
 - Start metric review only after a button labelled exactly `OK` is selected.
 - Never accept an AI-expected Metric outside the selected catalog category.
 - Assess Test Objective and Calculation Method / Formula independently.
 - Use only `OK`, `IT IS EMPTY`, or `NEEDS REVISION` for field status.
 - Require a short reason and corrected text for `NEEDS REVISION`.
 - Limit questions for each reviewed field to three.
-- Write absent required metrics only to the current `Output/missing_metrics_<id>.xlsx` file.
+- Show final results in the browser; never write review output files.
 - Never print, log, return, or commit `OPENAI_API_KEY`.
 - Load `OPENAI_API_KEY`, `OPENAI_MODEL`, and `OPENAI_TEMPERATURE` only from the environment or `.env.local`.
 - Give an invalid structured result at most one repair call with concise validation feedback;
   never automatically repair provider authentication, billing, rate-limit, or connection errors.
-- Keep original developer Objective and Formula values server-owned; do not require OpenAI to
-  echo them in structured output.
+- Keep original developer Objective and Formula values in `system_metrics` for validation.
 - Match returned catalog values case-insensitively, then normalize them to exact source spelling.
 - Preserve the current refinement or metric-review stage after failure so it can be retried.
 
 ## OpenAI flow
 
-1. Call 1 sends the QM source text and the full parsed catalog, then returns the initial use-case draft, `understanding_confidence`, and zero to four clarification questions.
-2. Call 2 sends the source text, full initial draft, clarification answers, and full parsed catalog, then returns the refined use case, MRM explanation, and business/risk flow.
-3. After the user selects exactly `OK`, Call 3 sends the refined use case, only the final selected category's catalog metrics, and the developer workbook metrics, then returns expected metrics and independent Objective and Formula assessments.
+1. Call 1 sends exact QM text, exact `metrics.md` Markdown, and the three-column workbook rows.
+2. Call 2 sends answered question/answer pairs and the previous output; skip it when no answer exists.
+3. After exact `OK`, Call 3 returns expected metrics and independent Objective and Formula assessments for browser display.
+
+All calls use the same top-level `LLMInput` and `LLMOutput` schemas. Fields owned by later calls stay empty until that call.
 
 ## Architecture
 
 - Keep production modules directly under `src/`; do not add a redundant package directory.
 - Keep provider prompts as version-controlled `.yml` files under root `prompts/` and load them through `src/prompt_loader.py`; do not inline provider prompt prose in Python.
 - Keep Pydantic contracts in `schemas.py`.
-- Keep input reading and validation in `input_reader.py` and output workbook creation and
-  storage in `output_writer.py`.
+- Keep user TXT/workbook reading in `user_input_reader.py` and raw catalog reading plus internal
+  validation parsing in `metric_catalog_reader.py`.
 - Keep OpenAI client construction and authentication in `openai_connection.py`; changing the
   supported authentication mechanism must not require changes to review logic.
 - Keep OpenAI calls in `ai_reviewer.py` and orchestration in `workflow.py`.

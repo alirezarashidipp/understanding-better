@@ -1,0 +1,21 @@
+user_inputs:
+  qm_filename: 'QM-.+\.txt'
+  workbook_filename: 'MRM_.+\.xlsx'
+  workbook_columns:
+    monitoring_metric:
+      - Monitoring Metric
+      - Metric
+    test_objective:
+      - Test Objective
+    calculation_method:
+      - Calculation Method/Formula
+      - Calcution Method/Formula
+      - Calculation Method / Formula
+  empty_metric_placeholders:
+    - Any other(s)
+
+global_metrics_format:
+  sections:
+    subcategories: Main Subcategories
+    examples: Exmaples
+    metrics: Metrics
