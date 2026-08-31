@@ -20,9 +20,15 @@ from starlette.datastructures import UploadFile
 
 from ai_reviewer import OpenAIReviewer
 from config import AppSettings
-from openai_connection import create_openai_client
 from schemas import ExtraInfo, UploadedFileData
-from workflow import AIReviewer, ReviewState, continue_review, finish_review, start_review
+from workflow import (
+    AIReviewer,
+    MetricReviewRequest,
+    RefineReviewRequest,
+    ReviewState,
+    ReviewWorkflow,
+    StartReviewRequest,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +40,14 @@ def create_app(
     project_root = (root or Path.cwd()).resolve()
     if reviewer is None:
         settings = AppSettings.from_env(project_root)
-        client = create_openai_client(settings)
         active_reviewer = OpenAIReviewer(
-            client=client,
+            api_key=settings.openai_api_key.get_secret_value(),
             model=settings.openai_model,
             temperature=settings.openai_temperature,
         )
     else:
         active_reviewer = reviewer
+    review_workflow = ReviewWorkflow(active_reviewer)
     templates = Jinja2Templates(directory=str(project_root / "templates"))
     question_states: dict[str, ReviewState] = {}
     ready_states: dict[str, ReviewState] = {}
@@ -93,11 +99,12 @@ def create_app(
             async with request.form(max_files=2) as form:
                 qm_files = await _uploaded_files(form.getlist("qm_file"))
                 workbook_files = await _uploaded_files(form.getlist("workbook_file"))
-            state = start_review(
-                project_root / "metrics" / "metrics.md",
-                active_reviewer,
-                qm_files=qm_files,
-                workbook_files=workbook_files,
+            state = review_workflow.start_chain.invoke(
+                StartReviewRequest(
+                    catalog_path=project_root / "metrics" / "metrics.md",
+                    qm_files=qm_files,
+                    workbook_files=workbook_files,
+                )
             )
             review_id = uuid4().hex
             question_states[review_id] = state
@@ -136,7 +143,13 @@ def create_app(
                 answers.append(ExtraInfo(question=question, answer=answer))
 
         try:
-            ready = continue_review(data, previous_output, answers, active_reviewer)
+            ready = review_workflow.refine_chain.invoke(
+                RefineReviewRequest(
+                    data=data,
+                    previous_output=previous_output,
+                    answers=answers,
+                )
+            )
             question_states.pop(review_id, None)
             ready_states[review_id] = ready
             return render_page(
@@ -185,7 +198,12 @@ def create_app(
 
         data, previous_output = state
         try:
-            result = finish_review(data, previous_output, active_reviewer)
+            result = review_workflow.metric_review_chain.invoke(
+                MetricReviewRequest(
+                    data=data,
+                    previous_output=previous_output,
+                )
+            )
             ready_states.pop(review_id, None)
             return render_page(request, "result", result=result)
         except OpenAIError as error:
@@ -219,6 +237,7 @@ def create_app(
             )
 
     app.state.project_root = project_root
+    app.state.review_workflow = review_workflow
     app.state.question_states = question_states
     app.state.ready_states = ready_states
     return app

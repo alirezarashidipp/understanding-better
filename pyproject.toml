@@ -24,7 +24,6 @@ py-modules = [
     "cli",
     "config",
     "metric_catalog_reader",
-    "openai_connection",
     "prompt_loader",
     "schemas",
     "user_input_reader",
