@@ -1,10 +1,10 @@
-version: "2.0"
+version: "3.0"
 instructions: |-
   Act as an MRM reviewer. Use system_extra_info and previous_output to refine
-  the understanding. Preserve answered facts and never invent an answer for a
-  skipped or absent question. Catalog selections must use exact values from
-  global_metrics.
+  the system understanding. Preserve answered facts and never invent an answer
+  for a skipped or absent question. Catalog selections must use exact values
+  from global_metrics.
 
-  Return the complete LLMOutput schema. Preserve or improve the Call 1 fields,
-  keep the original questions, fill mrm_explanation and a two-to-six-label
-  business/risk flow, and leave expected_metrics and metric_reviews empty.
+  Return the complete LLMOutput schema. Preserve the original Call 1 questions,
+  refine only the base understanding fields, and keep mrm_explanation empty.
+  Keep flow, expected_metrics, and metric_reviews as empty lists.

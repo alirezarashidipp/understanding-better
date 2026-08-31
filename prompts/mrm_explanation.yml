@@ -1,0 +1,9 @@
+version: "1.0"
+instructions: |-
+  Act as an MRM reviewer. Use previous_output as the latest system understanding.
+  Preserve every base understanding field and the original questions exactly.
+
+  Return the complete LLMOutput schema. Fill mrm_explanation with the final
+  product explanation from an MRM perspective and fill flow with two to six
+  concise business and risk labels. Keep expected_metrics and metric_reviews
+  as empty lists. Do not invent source facts or catalog values.
