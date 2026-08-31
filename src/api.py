@@ -1,10 +1,9 @@
 import logging
-import re
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from openai import (
@@ -22,17 +21,10 @@ from starlette.datastructures import UploadFile
 from ai_reviewer import OpenAIReviewer
 from config import AppSettings
 from openai_connection import create_openai_client
-from schemas import (
-    ClarificationAnswer,
-    PendingReview,
-    ReadyForMetricReview,
-    ReviewPaths,
-    UploadedFileData,
-)
-from workflow import AIReviewer, finish_review, refine_review, start_review
+from schemas import ExtraInfo, UploadedFileData
+from workflow import AIReviewer, ReviewState, continue_review, finish_review, start_review
 
 logger = logging.getLogger(__name__)
-DOWNLOAD_NAME = re.compile(r"(?:mrm_review|missing_metrics)_[0-9a-f]{32}\.xlsx")
 
 
 def create_app(
@@ -51,8 +43,8 @@ def create_app(
     else:
         active_reviewer = reviewer
     templates = Jinja2Templates(directory=str(project_root / "templates"))
-    draft_states: dict[str, PendingReview] = {}
-    refined_states: dict[str, ReadyForMetricReview] = {}
+    question_states: dict[str, ReviewState] = {}
+    ready_states: dict[str, ReviewState] = {}
 
     def render_page(
         request: Request,
@@ -101,19 +93,19 @@ def create_app(
             async with request.form(max_files=2) as form:
                 qm_files = await _uploaded_files(form.getlist("qm_file"))
                 workbook_files = await _uploaded_files(form.getlist("workbook_file"))
-            pending = start_review(
-                ReviewPaths.from_root(project_root),
+            state = start_review(
+                project_root / "metrics" / "metrics.md",
                 active_reviewer,
                 qm_files=qm_files,
                 workbook_files=workbook_files,
             )
             review_id = uuid4().hex
-            draft_states[review_id] = pending
+            question_states[review_id] = state
             return render_page(
                 request,
                 "questions",
                 review_id=review_id,
-                draft=pending.draft,
+                result=state[1],
             )
         except OpenAIError as error:
             message, status_code = _provider_error(error)
@@ -131,31 +123,27 @@ def create_app(
     async def refine(request: Request) -> HTMLResponse:
         form = await request.form()
         review_id = str(form.get("review_id", ""))
-        pending = draft_states.get(review_id)
-        if pending is None:
+        state = question_states.get(review_id)
+        if state is None:
             return render_error(request, "This review session is no longer available.")
 
+        data, previous_output = state
         answers = []
-        for question in pending.draft.questions:
-            skipped = form.get(f"skip_{question.id}") == "on"
-            raw_answer = str(form.get(f"answer_{question.id}", "")).strip()
-            answers.append(
-                ClarificationAnswer(
-                    question_id=question.id,
-                    answer="" if skipped else raw_answer,
-                    skipped=skipped,
-                )
-            )
+        for index, question in enumerate(previous_output.questions):
+            skipped = form.get(f"skip_{index}") == "on"
+            answer = str(form.get(f"answer_{index}", "")).strip()
+            if answer and not skipped:
+                answers.append(ExtraInfo(question=question, answer=answer))
 
         try:
-            ready = refine_review(pending, answers, active_reviewer)
-            draft_states.pop(review_id, None)
-            refined_states[review_id] = ready
+            ready = continue_review(data, previous_output, answers, active_reviewer)
+            question_states.pop(review_id, None)
+            ready_states[review_id] = ready
             return render_page(
                 request,
                 "understanding",
                 review_id=review_id,
-                refined=ready.refined,
+                result=ready[1],
             )
         except OpenAIError as error:
             message, status_code = _provider_error(error)
@@ -165,7 +153,7 @@ def create_app(
                 status_code=status_code,
                 error=message,
                 review_id=review_id,
-                draft=pending.draft,
+                result=previous_output,
             )
         except (ValueError, RuntimeError) as error:
             return render_page(
@@ -174,7 +162,7 @@ def create_app(
                 status_code=400,
                 error=str(error),
                 review_id=review_id,
-                draft=pending.draft,
+                result=previous_output,
             )
         except Exception:
             logger.exception("Use-case refinement failed")
@@ -184,27 +172,22 @@ def create_app(
                 status_code=500,
                 error="The final MRM understanding could not be created. Please try again.",
                 review_id=review_id,
-                draft=pending.draft,
+                result=previous_output,
             )
 
     @app.post("/review", response_class=HTMLResponse, name="review")
     async def review(request: Request) -> HTMLResponse:
         form = await request.form()
         review_id = str(form.get("review_id", ""))
-        ready = refined_states.get(review_id)
-        if ready is None:
+        state = ready_states.get(review_id)
+        if state is None:
             return render_error(request, "This review session is no longer available.")
 
+        data, previous_output = state
         try:
-            completed = finish_review(ready, active_reviewer)
-            refined_states.pop(review_id, None)
-            return render_page(
-                request,
-                "result",
-                refined=ready.refined,
-                result=completed.result,
-                outputs=completed.outputs,
-            )
+            result = finish_review(data, previous_output, active_reviewer)
+            ready_states.pop(review_id, None)
+            return render_page(request, "result", result=result)
         except OpenAIError as error:
             message, status_code = _provider_error(error)
             return render_page(
@@ -213,7 +196,7 @@ def create_app(
                 status_code=status_code,
                 error=message,
                 review_id=review_id,
-                refined=ready.refined,
+                result=previous_output,
             )
         except (ValueError, RuntimeError) as error:
             return render_page(
@@ -222,7 +205,7 @@ def create_app(
                 status_code=400,
                 error=str(error),
                 review_id=review_id,
-                refined=ready.refined,
+                result=previous_output,
             )
         except Exception:
             logger.exception("Metric review failed")
@@ -232,30 +215,12 @@ def create_app(
                 status_code=500,
                 error="The metric review could not be completed. Please try again.",
                 review_id=review_id,
-                refined=ready.refined,
+                result=previous_output,
             )
 
-    @app.get("/download/{name}", name="download")
-    async def download(name: str) -> FileResponse:
-        output_dir = (project_root / "Output").resolve()
-        path = (output_dir / name).resolve()
-        if (
-            Path(name).name != name
-            or DOWNLOAD_NAME.fullmatch(name) is None
-            or path.parent != output_dir
-        ):
-            raise HTTPException(status_code=404, detail="File not found")
-        if not path.is_file():
-            raise HTTPException(status_code=404, detail="File not found")
-        return FileResponse(
-            path,
-            filename=name,
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-
     app.state.project_root = project_root
-    app.state.draft_states = draft_states
-    app.state.refined_states = refined_states
+    app.state.question_states = question_states
+    app.state.ready_states = ready_states
     return app
 
 
