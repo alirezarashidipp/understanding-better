@@ -22,5 +22,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; }
 th, td { padding: 10px; border: 1px solid #dfe4ea; text-align: left; vertical-align: top; }
 th { background: #f2f5f9; }
 .status { font-weight: 700; }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.review-row { padding: 4px 0 16px; border-bottom: 1px solid #dfe4ea; }
+.review-row:last-child { border-bottom: 0; }
+.review-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 .error { border-color: #e2a3a3; background: #fff6f6; }

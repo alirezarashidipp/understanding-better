@@ -37,45 +37,47 @@
   {% elif stage == "questions" %}
     <div class="card">
       <h2>Current understanding</h2>
-      <p><strong>Business use case:</strong> {{ draft.use_case.business_use_case }}</p>
-      <p><strong>System type:</strong> {{ draft.use_case.system_type }}</p>
-      <p><strong>Main category:</strong> {{ draft.use_case.catalog_selection.main_category }}</p>
-      <p><strong>Main subcategory:</strong> {{ draft.use_case.catalog_selection.subcategory }}</p>
-      <p><strong>Closest application:</strong> {{ draft.use_case.catalog_selection.closest_application }}</p>
-      <p><strong>Understanding confidence:</strong> {{ draft.understanding_confidence }}%</p>
-      <p><strong>Flow:</strong> {{ draft.use_case.input }} → {{ draft.use_case.processing }} → {{ draft.use_case.output }}</p>
+      <p><strong>Business use case:</strong> {{ result.business_use_case }}</p>
+      <p><strong>System type:</strong> {{ result.system_type }}</p>
+      <p><strong>Main category:</strong> {{ result.main_category }}</p>
+      <p><strong>Main subcategory:</strong> {{ result.subcategory }}</p>
+      <p><strong>Closest application:</strong> {{ result.closest_application }}</p>
+      <p><strong>Understanding confidence:</strong> {{ result.understanding_confidence }}%</p>
+      <p><strong>Flow:</strong> {{ result.input }} → {{ result.processing }} → {{ result.output }}</p>
     </div>
     <form method="post" action="{{ url_for('refine') }}">
       <input type="hidden" name="review_id" value="{{ review_id }}">
-      {% if draft.questions %}
-      {% for question in draft.questions %}
+      {% for question in result.questions %}
         <div class="card">
-          <label for="answer_{{ question.id }}">{{ question.question }}</label>
-          <input id="answer_{{ question.id }}" name="answer_{{ question.id }}" type="text">
-          <label class="skip"><input name="skip_{{ question.id }}" type="checkbox"> Skip</label>
+          <label for="answer_{{ loop.index0 }}">{{ question }}</label>
+          <input id="answer_{{ loop.index0 }}" name="answer_{{ loop.index0 }}" type="text">
+          <label class="skip">
+            <input name="skip_{{ loop.index0 }}" type="checkbox"> Skip
+          </label>
         </div>
-      {% endfor %}
       {% else %}
         <div class="card">
           <p>The TXT contains enough information. No clarification questions are needed.</p>
         </div>
-      {% endif %}
+      {% endfor %}
       <button type="submit">Next</button>
     </form>
   {% elif stage == "understanding" %}
     <div class="card">
       <h2>Final MRM understanding</h2>
-      <p>{{ refined.mrm_explanation }}</p>
-      <p><strong>Business use case:</strong> {{ refined.use_case.business_use_case }}</p>
-      <p><strong>System type:</strong> {{ refined.use_case.system_type }}</p>
-      <p><strong>Main category:</strong> {{ refined.use_case.catalog_selection.main_category }}</p>
-      <p><strong>Main subcategory:</strong> {{ refined.use_case.catalog_selection.subcategory }}</p>
-      <p><strong>Closest application:</strong> {{ refined.use_case.catalog_selection.closest_application }}</p>
-      <div class="flow" aria-label="Simple business and risk flow">
-        {% for node in refined.diagram %}
-          <span class="node">{{ node }}</span>{% if not loop.last %}<span>→</span>{% endif %}
-        {% endfor %}
-      </div>
+      {% if result.mrm_explanation %}<p>{{ result.mrm_explanation }}</p>{% endif %}
+      <p><strong>Business use case:</strong> {{ result.business_use_case }}</p>
+      <p><strong>System type:</strong> {{ result.system_type }}</p>
+      <p><strong>Main category:</strong> {{ result.main_category }}</p>
+      <p><strong>Main subcategory:</strong> {{ result.subcategory }}</p>
+      <p><strong>Closest application:</strong> {{ result.closest_application }}</p>
+      {% if result.flow %}
+        <div class="flow" aria-label="Simple business and risk flow">
+          {% for node in result.flow %}
+            <span class="node">{{ node }}</span>{% if not loop.last %}<span>→</span>{% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
     </div>
     <form method="post" action="{{ url_for('review') }}">
       <input type="hidden" name="review_id" value="{{ review_id }}">
@@ -84,37 +86,60 @@
   {% elif stage == "result" %}
     <div class="card">
       <h2>MRM summary</h2>
-      <p>{{ refined.mrm_explanation }}</p>
-      <p><strong>System type:</strong> {{ refined.use_case.system_type }}</p>
-      <p><strong>Main category:</strong> {{ refined.use_case.catalog_selection.main_category }}</p>
-      <div class="flow" aria-label="Simple business flow">
-        {% for node in refined.diagram %}
-          <span class="node">{{ node }}</span>{% if not loop.last %}<span>→</span>{% endif %}
-        {% endfor %}
-      </div>
+      {% if result.mrm_explanation %}<p>{{ result.mrm_explanation }}</p>{% endif %}
+      <p><strong>Business use case:</strong> {{ result.business_use_case }}</p>
+      <p><strong>System type:</strong> {{ result.system_type }}</p>
+      <p><strong>Main category:</strong> {{ result.main_category }}</p>
+      <p><strong>Main subcategory:</strong> {{ result.subcategory }}</p>
+      <p><strong>Closest application:</strong> {{ result.closest_application }}</p>
+      {% if result.flow %}
+        <div class="flow" aria-label="Simple business flow">
+          {% for node in result.flow %}
+            <span class="node">{{ node }}</span>{% if not loop.last %}<span>→</span>{% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
     </div>
+
     <div class="card">
-      <h2>Metric review</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Metric</th><th>Test Objective Validation</th><th>Formula Validation</th></tr>
-          </thead>
+      <h2>Expected metrics</h2>
+      {% if result.expected_metrics %}
+        <div class="table-wrap"><table>
+          <thead><tr><th>Expected Metric</th><th>Why Needed</th><th>Proposed Test Objective</th><th>Proposed Formula</th></tr></thead>
           <tbody>
-          {% for row in result.metric_reviews %}
-            <tr>
-              <td>{{ row.metric }}</td>
-              <td class="status">{{ row.test_objective_assessment.status }}</td>
-              <td class="status">{{ row.calculation_method_assessment.status }}</td>
-            </tr>
+          {% for metric in result.expected_metrics %}
+            <tr><td>{{ metric.name }}</td><td>{{ metric.applicability_reason }}</td><td>{{ metric.test_objective }}</td><td>{{ metric.calculation_method }}</td></tr>
           {% endfor %}
           </tbody>
-        </table>
-      </div>
-      <p class="actions">
-        <a class="button" href="{{ url_for('download', name=outputs.missing_metrics_file.name) }}">Missing Metrics</a>
-        <a class="button" href="{{ url_for('download', name=outputs.review_file.name) }}">MRM Review</a>
-      </p>
+        </table></div>
+      {% else %}
+        <p>No additional expected metrics were identified.</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Metric review</h2>
+      {% for row in result.metric_reviews %}
+        <section class="review-row">
+          <h3>{{ row.metric }}</h3>
+          <div class="review-fields">
+            <div>
+              <h4>Test Objective: <span class="status">{{ row.objective_status }}</span></h4>
+              {% if row.objective_reason %}<p><strong>Reason:</strong> {{ row.objective_reason }}</p>{% endif %}
+              {% if row.objective_revised %}<p><strong>Revised:</strong> {{ row.objective_revised }}</p>{% endif %}
+              {% if row.objective_questions %}<p><strong>Questions:</strong> {{ row.objective_questions | join('; ') }}</p>{% endif %}
+            </div>
+            <div>
+              <h4>Formula: <span class="status">{{ row.formula_status }}</span></h4>
+              {% if row.formula_reason %}<p><strong>Reason:</strong> {{ row.formula_reason }}</p>{% endif %}
+              {% if row.formula_revised %}<p><strong>Revised:</strong> {{ row.formula_revised }}</p>{% endif %}
+              {% if row.formula_questions %}<p><strong>Questions:</strong> {{ row.formula_questions | join('; ') }}</p>{% endif %}
+            </div>
+          </div>
+        </section>
+      {% else %}
+        <p>No system metrics were supplied.</p>
+      {% endfor %}
     </div>
   {% elif stage == "error" %}
     <div class="card error">
