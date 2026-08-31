@@ -23,11 +23,11 @@ py-modules = [
     "api",
     "cli",
     "config",
-    "input_reader",
+    "metric_catalog_reader",
     "openai_connection",
-    "output_writer",
     "prompt_loader",
     "schemas",
+    "user_input_reader",
     "workflow",
 ]
 

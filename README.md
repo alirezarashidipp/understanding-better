@@ -1,120 +1,73 @@
 # MRM Model Review
 
-یک MVP محلی و تک‌کاربره با FastAPI برای فهم Use Case مدل، پرسیدن سؤال‌های ضروری از MRM Reviewer، انتخاب Metrics تأییدشده و بررسی مستقل Test Objective و Calculation Method / Formula است.
+یک MVP محلی و تک‌کاربره با FastAPI برای فهم Use Case و بررسی Metrics از دید MRM است.
 
-## ساختار
+## ساختار ساده
 
 ```text
-main.py
-requirements.txt
-requirements-dev.txt
-templates/
-├── index.html
-├── styles.css
-└── app.js
-src/
-├── cli.py
-├── api.py
-├── config.py
-├── schemas.py
-├── input_reader.py
-├── output_writer.py
-├── openai_connection.py
-├── ai_reviewer.py
-├── prompt_loader.py
-└── workflow.py
-prompts/
-├── use_case.yml
-├── use_case_refinement.yml
-└── metric_review.yml
+QM-*.txt + MRM_*.xlsx + metrics/metrics.md
+                    ↓
+                 LLMInput
+                    ↓
+       Call 1 → Call 2 اختیاری → OK → Call 3
+                    ↓
+                 LLMOutput
+                    ↓
+                  Browser
 ```
 
-شرح کامل مرز ماژول‌ها در [docs/architecture.md](docs/architecture.md) قرار دارد.
+کدهای اصلی مستقیماً زیر `src/` هستند:
 
-## فرایند توسعه
+- `user_input_reader.py`: خواندن TXT و سه ستون Excel
+- `metric_catalog_reader.py`: خواندن متن خام `metrics.md` و parse حداقلی برای validation
+- `schemas.py`: تعریف `LLMInput`، `LLMOutput` و ردیف‌های ساده آن‌ها
+- `ai_reviewer.py`: سه فراخوانی OpenAI با schema یکسان
+- `workflow.py`: ترتیب خطی سه مرحله و validation
+- `api.py`: routeها و state موقت داخل process
+- `templates/`: صفحه ساده برنامه
 
-تغییرات MVP با Spec Kit مدیریت می‌شوند. قواعد ثابت پروژه در
-`.specify/memory/constitution.md` قرار دارند و هر feature از مسیر specification، plan، tasks،
-implementation و convergence عبور می‌کند. این فرایند نباید باعث اضافه‌شدن لایه‌های غیرضروری به
-کد برنامه شود.
+Promptها در سه فایل YAML زیر `prompts/` هستند و داخل کد Python نوشته نشده‌اند.
 
 ## ورودی‌ها
 
-- دقیقاً یک فایل `QM-*.txt` که Reviewer داخل صفحه انتخاب می‌کند
-- دقیقاً یک فایل `MRM_*.xlsx` که Reviewer داخل صفحه انتخاب می‌کند
-- فایل catalog در `metrics/metrics.md`
+- دقیقاً یک `QM-*.txt`
+- دقیقاً یک `MRM_*.xlsx`
+- catalog ثابت `metrics/metrics.md`
 - تنظیمات `OPENAI_API_KEY`، `OPENAI_MODEL` و `OPENAI_TEMPERATURE` در environment یا `.env.local`
-- مقدار پیش‌فرض `OPENAI_TEMPERATURE` برابر `0.0` است و باید بین `0.0` و `2.0` باشد
 
-فایل‌های انتخاب‌شده در `Input/` کپی نمی‌شوند. برنامه فقط همان دو فایل همان Review را می‌خواند.
-
-ستون‌های اصلی Excel توسعه‌دهنده:
+متن TXT بدون تغییر در `system_main_info` قرار می‌گیرد. متن کامل Markdown بدون بازسازی در
+`global_metrics` قرار می‌گیرد. هر ردیف Excel در `system_metrics` فقط این سه کلید را دارد:
 
 | Monitoring Metric | Test Objective | Calculation Method/Formula |
 |---|---|---|
 
-نام‌های قدیمی `Metric`، `Calcution Method/Formula` و `Calculation Method / Formula` نیز برای سازگاری پذیرفته می‌شوند.
+نام‌های قدیمی `Metric`، `Calcution Method/Formula` و `Calculation Method / Formula` نیز هنگام
+خواندن Excel پذیرفته می‌شوند، اما JSON همیشه نام‌های canonical بالا را دارد.
 
 ## جریان بررسی
 
-1. Reviewer یک QM و یک workbook را در صفحه انتخاب می‌کند؛ برنامه آن‌ها و ساختار کامل `metrics.md` را اعتبارسنجی می‌کند.
-2. LLM یکی از شش دسته اصلی، نزدیک‌ترین زیرشاخه و نزدیک‌ترین Application موجود در catalog را انتخاب می‌کند.
-3. LLM میزان اطمینان خود به درک اولیه محصول را با یک عدد صحیح از صفر تا صد اعلام می‌کند.
-4. در صورت نیاز به درک بهتر سیستم، صفر تا چهار سؤال قابل پاسخ یا `Skip` نمایش داده می‌شود.
-5. پس از `Next`، توضیح نهایی و Flow از نگاه MRM نمایش داده می‌شود.
-6. فقط بعد از زدن `OK`، Metrics همان دسته بررسی و فایل‌های Excel نوشته می‌شوند.
+1. Call 1 اطلاعات اصلی، catalog کامل و metrics فایل Excel را می‌گیرد و درک اولیه، confidence و صفر تا چهار سؤال را برمی‌گرداند.
+2. Reviewer می‌تواند سؤال‌ها را جواب دهد یا Skip کند. اگر هیچ جواب واقعی وجود نداشته باشد، Call 2 اجرا نمی‌شود.
+3. نتیجه فعلی نمایش داده می‌شود. فقط دکمه‌ای با متن دقیق `OK` Call 3 را شروع می‌کند.
+4. Call 3 expected metrics و بررسی مستقل Objective و Formula را برمی‌گرداند.
 
-اگر خروجی ساختاریافتهٔ OpenAI نامعتبر باشد، همان مرحله فقط یک بار با توضیح خطا به‌صورت خودکار
-اصلاح می‌شود. اگر تلاش دوم نیز نامعتبر باشد، مرحلهٔ جاری برای Retry دستی باقی می‌ماند؛ در مراحل
-`Next` و `OK` نیازی به آپلود دوبارهٔ فایل‌ها نیست.
+هر سه Call همان `LLMInput` و `LLMOutput` را استفاده می‌کنند. فیلدهای مرحله‌های آینده تا زمان
+خود آن مرحله خالی می‌مانند. خروجی نامعتبر فقط یک repair attempt می‌گیرد؛ خطاهای provider مثل
+authentication، billing، rate limit و connection به‌صورت خودکار repair نمی‌شوند.
 
-## Prompt as YAML
-
-- `prompts/use_case.yml`: فهم Use Case و حداکثر چهار سؤال
-- `prompts/use_case_refinement.yml`: توضیح نهایی و Flow از نگاه MRM
-- `prompts/metric_review.yml`: انتخاب Metrics و بررسی مستقل Objective و Formula
-
-هر Prompt یک `version` ثابت و یک فیلد `instructions` دارد و قابل review و version control است.
-
-نام‌های catalog بدون حساسیت به حروف تطبیق داده می‌شوند، اما همیشه با املای دقیق
-`metrics/metrics.md` نمایش داده و ذخیره می‌شوند. متن اصلی Objective و Formula از Excel توسط سرور
-نگه داشته می‌شود و از مدل خواسته نمی‌شود آن را در پاسخ تکرار کند.
-
-## نصب
+## نصب و اجرا
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe -m pip install -e .
-```
-
-برای ساخت محیط جدید:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.\.venv\Scripts\python.exe -m pip install -e .
-```
-
-## اجرا
-
-روش‌های معتبر اجرا:
-
-```powershell
 .\.venv\Scripts\python.exe main.py
-.\.venv\Scripts\uvicorn.exe main:app --host 127.0.0.1 --port 8000
-mrm-review
 ```
 
-سپس `http://127.0.0.1:8000` را باز کنید. مستندات API در `http://127.0.0.1:8000/api/docs` و health check در `/health` است.
+سپس `http://127.0.0.1:8000` را باز کنید. مستندات API در `/api/docs` و health check در `/health` است.
 
-## خروجی‌ها
+## خروجی
 
-هر Review دو فایل با یک شناسهٔ مشترک مستقیماً داخل `Output/` می‌سازد:
-
-- `Output/mrm_review_<id>.xlsx`: سه ستون اصلی کاربر و سه ستون Validation/Revised/Questions برای هر یک از Objective و Formula
-- `Output/missing_metrics_<id>.xlsx`: فقط Metrics ضروری غایب همراه دلیل نیاز، Objective و Formula پیشنهادی
-
-Review بعدی فایل‌های قبلی را overwrite نمی‌کند و پوشهٔ جداگانه نیز نمی‌سازد.
+نتیجه کامل فقط در صفحه مرورگر نمایش داده می‌شود. برنامه هیچ فایل Excel یا JSON خروجی نمی‌سازد.
 
 ## محدودیت‌های آگاهانه MVP
 
