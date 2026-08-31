@@ -2,7 +2,6 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-
 Status = Literal["OK", "IT IS EMPTY", "NEEDS REVISION"]
 SystemType = Literal["RAG", "LLM", "Traditional ML", "Agentic", "Hybrid", "Other"]
 

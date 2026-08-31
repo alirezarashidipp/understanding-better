@@ -27,9 +27,7 @@ class AppSettings(BaseModel):
         try:
             temperature = float(temperature_text)
         except ValueError:
-            raise RuntimeError(
-                "OPENAI_TEMPERATURE must be a number from 0.0 to 2.0."
-            ) from None
+            raise RuntimeError("OPENAI_TEMPERATURE must be a number from 0.0 to 2.0.") from None
         if not 0.0 <= temperature <= 2.0:
             raise RuntimeError("OPENAI_TEMPERATURE must be from 0.0 to 2.0.")
 

@@ -51,6 +51,7 @@ def continue_review(
     answers: list[ExtraInfo],
     reviewer: AIReviewer,
 ) -> ReviewState:
+    answers = [item for item in answers if item.answer.strip()]
     next_input = data.model_copy(
         update={"system_extra_info": answers, "previous_output": previous_output}
     )
@@ -103,7 +104,12 @@ def _validate_output(data: LLMInput, output: LLMOutput, stage: int) -> None:
         raise ValueError("The result requires understanding_confidence.")
 
     if stage == 1:
-        if output.mrm_explanation or output.flow or output.expected_metrics or output.metric_reviews:
+        if (
+            output.mrm_explanation
+            or output.flow
+            or output.expected_metrics
+            or output.metric_reviews
+        ):
             raise ValueError("Call 1 fields for later stages must be empty.")
         return
 
@@ -134,8 +140,7 @@ def _validate_output(data: LLMInput, output: LLMOutput, stage: int) -> None:
         "flow",
     )
     if any(
-        getattr(output, field) != getattr(data.previous_output, field)
-        for field in preserved_fields
+        getattr(output, field) != getattr(data.previous_output, field) for field in preserved_fields
     ):
         raise ValueError("Call 3 must preserve the latest system understanding.")
     _validate_metric_results(data, sections["Metrics"], output)

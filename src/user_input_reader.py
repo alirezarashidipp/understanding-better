@@ -73,9 +73,7 @@ def _read_workbook(upload: UploadedFileData) -> list[SystemMetric]:
             calculation = _cell(row, positions["calculation_method"])
             normalized_name = name.casefold()
 
-            if not name or (
-                normalized_name in EMPTY_METRICS and not objective and not calculation
-            ):
+            if not name or (normalized_name in EMPTY_METRICS and not objective and not calculation):
                 continue
             if normalized_name in names:
                 raise ValueError(f"Developer workbook contains duplicate Metric '{name}'.")
@@ -113,4 +111,4 @@ def _cell(row: tuple[object, ...], position: int) -> str:
     if position >= len(row) or row[position] is None:
         return ""
     value = str(row[position]).strip()
-    return "" if value == '\"\"' else value
+    return "" if value == '""' else value
