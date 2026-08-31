@@ -31,7 +31,6 @@ class OpenAIReviewer:
             instructions += f"\n\nPrevious output validation error: {repair_feedback}"
         response = self.client.responses.parse(
             model=self.model,
-            temperature=self.temperature,
             store=False,
             instructions=instructions,
             input=json.dumps(data.model_dump(mode="json", by_alias=True), ensure_ascii=False),
