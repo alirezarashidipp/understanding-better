@@ -55,7 +55,7 @@ All calls use the same top-level `LLMInput` and `LLMOutput` schemas. Fields owne
   validation parsing in `metric_catalog_reader.py`.
 - Keep OpenAI client construction and all four OpenAI calls in `ai_reviewer.py`.
 - Keep the three HTTP-stage `langchain-core` runnables and review guardrails in `workflow.py`.
-- Keep FastAPI routes in `api.py` and execution arguments in `cli.py`.
+- Keep FastAPI routes in `api.py` and local application startup in `main.py`.
 - Keep frontend assets together under root `templates/`: `index.html`, `styles.css`, and `app.js`.
 - Keep the existing `create_app()` FastAPI application factory; do not add repository, service, factory abstraction, database, authentication, or multi-agent layers.
 

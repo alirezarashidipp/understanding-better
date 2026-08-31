@@ -4,6 +4,6 @@ app = create_app()
 
 
 if __name__ == "__main__":
-    from cli import main
+    import uvicorn
 
-    main(app_path="main:app", factory=False)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
