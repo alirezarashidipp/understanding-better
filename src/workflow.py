@@ -1,50 +1,21 @@
 from collections.abc import Callable
+from pathlib import Path
 from typing import Protocol, TypeVar
 
-from input_reader import read_review_package
-from output_writer import write_review_outputs
-from schemas import (
-    CatalogSelection,
-    ClarificationAnswer,
-    CompletedReview,
-    MetricCatalogItem,
-    MetricCategory,
-    MetricReviewResult,
-    PendingReview,
-    ReadyForMetricReview,
-    RefinedUseCase,
-    ReviewPaths,
-    UploadedFileData,
-    UseCaseDraft,
-)
+from metric_catalog_reader import parse_global_metrics, read_global_metrics
+from schemas import ExtraInfo, LLMInput, LLMOutput, UploadedFileData
+from user_input_reader import read_user_inputs
 
 
 class AIReviewer(Protocol):
-    def create_draft(
-        self,
-        source_text: str,
-        catalog: list[MetricCategory],
-        *,
-        repair_feedback: str = "",
-    ) -> UseCaseDraft: ...
+    def call_1(self, data: LLMInput, *, repair_feedback: str = "") -> LLMOutput: ...
 
-    def refine_use_case(
-        self,
-        pending: PendingReview,
-        answers: list[ClarificationAnswer],
-        *,
-        repair_feedback: str = "",
-    ) -> RefinedUseCase: ...
+    def call_2(self, data: LLMInput, *, repair_feedback: str = "") -> LLMOutput: ...
 
-    def review_metrics(
-        self,
-        ready: ReadyForMetricReview,
-        eligible_metrics: list[MetricCatalogItem],
-        *,
-        repair_feedback: str = "",
-    ) -> MetricReviewResult: ...
+    def call_3(self, data: LLMInput, *, repair_feedback: str = "") -> LLMOutput: ...
 
 
+ReviewState = tuple[LLMInput, LLMOutput]
 ReviewResult = TypeVar("ReviewResult")
 
 
@@ -53,168 +24,169 @@ class AIReviewValidationError(ValueError):
 
 
 def start_review(
-    paths: ReviewPaths,
+    catalog_path: Path,
     reviewer: AIReviewer,
     *,
     qm_files: list[UploadedFileData],
     workbook_files: list[UploadedFileData],
-) -> PendingReview:
-    package = read_review_package(qm_files, workbook_files, paths.metric_catalog_file)
-    draft = _call_with_one_repair(
-        lambda feedback: reviewer.create_draft(
-            package.source_text,
-            package.catalog,
-            repair_feedback=feedback,
-        ),
-        lambda result: _selected_category(package.catalog, result.use_case.catalog_selection),
+) -> ReviewState:
+    system_main_info, system_metrics = read_user_inputs(qm_files, workbook_files)
+    data = LLMInput(
+        system_main_info=system_main_info,
+        global_metrics=read_global_metrics(catalog_path),
+        system_metrics=system_metrics,
+        system_extra_info=[],
+        previous_output=None,
     )
-
-    return PendingReview(
-        paths=paths,
-        source_text=package.source_text,
-        catalog=package.catalog,
-        developer_metrics=package.developer_metrics,
-        draft=draft,
+    result = _call_with_one_repair(
+        lambda feedback: reviewer.call_1(data, repair_feedback=feedback),
+        lambda output: _validate_output(data, output, stage=1),
     )
+    return data, result
 
 
-def refine_review(
-    pending: PendingReview,
-    answers: list[ClarificationAnswer],
+def continue_review(
+    data: LLMInput,
+    previous_output: LLMOutput,
+    answers: list[ExtraInfo],
     reviewer: AIReviewer,
-) -> ReadyForMetricReview:
-    _validate_answers(pending, answers)
-    refined = _call_with_one_repair(
-        lambda feedback: reviewer.refine_use_case(
-            pending,
-            answers,
-            repair_feedback=feedback,
-        ),
-        lambda result: _selected_category(pending.catalog, result.use_case.catalog_selection),
+) -> ReviewState:
+    next_input = data.model_copy(
+        update={"system_extra_info": answers, "previous_output": previous_output}
     )
-    return ReadyForMetricReview(pending=pending, refined=refined)
+    if not answers:
+        return next_input, previous_output
+
+    result = _call_with_one_repair(
+        lambda feedback: reviewer.call_2(next_input, repair_feedback=feedback),
+        lambda output: _validate_output(next_input, output, stage=2),
+    )
+    return next_input, result
 
 
 def finish_review(
-    ready: ReadyForMetricReview,
+    data: LLMInput,
+    previous_output: LLMOutput,
     reviewer: AIReviewer,
-) -> CompletedReview:
-    pending = ready.pending
-    category = _selected_category(
-        pending.catalog,
-        ready.refined.use_case.catalog_selection,
-    )
-    result = _call_with_one_repair(
-        lambda feedback: reviewer.review_metrics(
-            ready,
-            category.metrics,
-            repair_feedback=feedback,
-        ),
-        lambda review: _validate_metrics(pending, category.metrics, review),
+) -> LLMOutput:
+    final_input = data.model_copy(update={"previous_output": previous_output})
+    return _call_with_one_repair(
+        lambda feedback: reviewer.call_3(final_input, repair_feedback=feedback),
+        lambda output: _validate_output(final_input, output, stage=3),
     )
 
-    developer_names = {metric.name.casefold() for metric in pending.developer_metrics}
-    missing_metrics = [
-        metric
-        for metric in result.expected_metrics
-        if metric.name.casefold() not in developer_names
-    ]
-    outputs = write_review_outputs(
-        output_dir=pending.paths.output_dir,
-        developer_metrics=pending.developer_metrics,
-        metric_reviews=result.metric_reviews,
-        missing_metrics=missing_metrics,
+
+def _validate_output(data: LLMInput, output: LLMOutput, stage: int) -> None:
+    catalog = parse_global_metrics(data.global_metrics)
+    category = _canonical_key(catalog, output.main_category, "Category")
+    sections = catalog[category]
+    output.main_category = category
+    output.subcategory = _canonical_value(
+        sections["Main Subcategories"], output.subcategory, "Subcategory"
     )
-    return CompletedReview(result=result, outputs=outputs)
+    output.closest_application = _canonical_value(
+        sections["Exmaples"], output.closest_application, "Application"
+    )
+
+    required_text = (
+        output.business_use_case,
+        output.main_category,
+        output.subcategory,
+        output.closest_application,
+        output.input,
+        output.processing,
+        output.output,
+    )
+    if any(not value.strip() for value in required_text):
+        raise ValueError("The system understanding fields must not be empty.")
+    if output.understanding_confidence is None:
+        raise ValueError("The result requires understanding_confidence.")
+
+    if stage == 1:
+        if output.mrm_explanation or output.flow or output.expected_metrics or output.metric_reviews:
+            raise ValueError("Call 1 fields for later stages must be empty.")
+        return
+
+    if data.previous_output is None:
+        raise ValueError("Later calls require previous_output.")
+    if output.questions != data.previous_output.questions:
+        raise ValueError("Later calls must preserve the Call 1 questions.")
+    if stage == 2:
+        if not output.mrm_explanation or not 2 <= len(output.flow) <= 6:
+            raise ValueError("The final understanding requires an explanation and 2-6 flow labels.")
+        if output.expected_metrics or output.metric_reviews:
+            raise ValueError("Call 2 metric fields must be empty.")
+        return
+
+    preserved_fields = (
+        "business_use_case",
+        "system_type",
+        "main_category",
+        "subcategory",
+        "closest_application",
+        "components",
+        "input",
+        "processing",
+        "output",
+        "understanding_confidence",
+        "questions",
+        "mrm_explanation",
+        "flow",
+    )
+    if any(
+        getattr(output, field) != getattr(data.previous_output, field)
+        for field in preserved_fields
+    ):
+        raise ValueError("Call 3 must preserve the latest system understanding.")
+    _validate_metric_results(data, sections["Metrics"], output)
 
 
-def _selected_category(
-    catalog: list[MetricCategory],
-    selection: CatalogSelection,
-) -> MetricCategory:
-    category = next(
-        (item for item in catalog if item.name.casefold() == selection.main_category.casefold()),
-        None,
-    )
-    if category is None:
-        raise ValueError(f"Category '{selection.main_category}' is not present in metrics.md.")
-    subcategory = next(
-        (
-            item
-            for item in category.subcategories
-            if item.casefold() == selection.subcategory.casefold()
-        ),
-        None,
-    )
-    if subcategory is None:
-        raise ValueError(
-            f"Subcategory '{selection.subcategory}' does not belong to "
-            f"'{category.name}' in metrics.md."
-        )
-    application = next(
-        (
-            item
-            for item in category.applications
-            if item.casefold() == selection.closest_application.casefold()
-        ),
-        None,
-    )
-    if application is None:
-        raise ValueError(
-            f"Application '{selection.closest_application}' does not belong to "
-            f"'{category.name}' in metrics.md."
-        )
-    selection.main_category = category.name
-    selection.subcategory = subcategory
-    selection.closest_application = application
-    return category
-
-
-def _validate_answers(
-    pending: PendingReview,
-    answers: list[ClarificationAnswer],
+def _validate_metric_results(
+    data: LLMInput,
+    approved_metrics: list[str],
+    output: LLMOutput,
 ) -> None:
-    question_ids = {question.id for question in pending.draft.questions}
-    answer_ids = [answer.question_id for answer in answers]
-    if set(answer_ids) != question_ids or len(answer_ids) != len(set(answer_ids)):
-        raise ValueError("Answers must cover every clarification question exactly once.")
+    expected_names = []
+    for metric in output.expected_metrics:
+        metric.name = _canonical_value(approved_metrics, metric.name, "Metric")
+        expected_names.append(metric.name.casefold())
+    if len(expected_names) != len(set(expected_names)):
+        raise ValueError("Expected metrics must not contain duplicates.")
 
+    system_by_name = {metric.monitoring_metric.casefold(): metric for metric in data.system_metrics}
+    review_names = [row.metric.casefold() for row in output.metric_reviews]
+    if set(review_names) != set(system_by_name) or len(review_names) != len(set(review_names)):
+        raise ValueError("Metric review rows must cover every system metric exactly once.")
 
-def _validate_metrics(
-    pending: PendingReview,
-    eligible_metrics: list[MetricCatalogItem],
-    result: MetricReviewResult,
-) -> None:
-    allowed_by_name = {metric.name.casefold(): metric for metric in eligible_metrics}
-    developer_by_name = {metric.name.casefold(): metric for metric in pending.developer_metrics}
-
-    for metric in result.expected_metrics:
-        approved_metric = allowed_by_name.get(metric.name.casefold())
-        if approved_metric is None:
-            raise ValueError(
-                f"Metric '{metric.name}' is not approved for the selected metrics.md category."
-            )
-        metric.name = approved_metric.name
-
-    review_names = [row.metric.casefold() for row in result.metric_reviews]
-    if set(review_names) != set(developer_by_name) or len(review_names) != len(set(review_names)):
-        raise ValueError("Metric review rows must cover every developer metric exactly once.")
-
-    for row in result.metric_reviews:
-        developer_metric = developer_by_name[row.metric.casefold()]
-        row.metric = developer_metric.name
+    for row in output.metric_reviews:
+        system_metric = system_by_name[row.metric.casefold()]
+        row.metric = system_metric.monitoring_metric
         _validate_empty_status(
-            developer_metric.test_objective,
-            row.test_objective_assessment.status,
+            system_metric.test_objective,
+            row.objective_status,
             "Test Objective",
             row.metric,
         )
         _validate_empty_status(
-            developer_metric.calculation_method,
-            row.calculation_method_assessment.status,
+            system_metric.calculation_method,
+            row.formula_status,
             "Calculation Method / Formula",
             row.metric,
         )
+
+
+def _canonical_key(values: dict[str, object], returned: str, label: str) -> str:
+    match = next((name for name in values if name.casefold() == returned.casefold()), None)
+    if match is None:
+        raise ValueError(f"{label} '{returned}' is not present in metrics.md.")
+    return match
+
+
+def _canonical_value(values: list[str], returned: str, label: str) -> str:
+    match = next((value for value in values if value.casefold() == returned.casefold()), None)
+    if match is None:
+        raise ValueError(f"{label} '{returned}' is not present in metrics.md.")
+    return match
 
 
 def _validate_empty_status(value: str, status: str, field: str, metric: str) -> None:
