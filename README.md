@@ -25,9 +25,10 @@ The main modules live directly under `src/`:
 - `workflow.py`: uses three `langchain-core` Runnables to coordinate four calls and validation
 - `api.py`: owns the routes and temporary in-process state
 - `views.py`: renders HTML responses and converts exceptions into safe public errors
-- `templates/`: contains the application page and frontend assets
+- `templates/`: contains the minimal application page and frontend assets
 
 The prompts for the four calls are stored in four YAML files under `prompts/`; provider prompt text is not written inside Python code.
+See `docs/architecture.md` for the runtime flow and file boundaries.
 
 ## Inputs
 
