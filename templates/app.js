@@ -1,46 +1,48 @@
-const skipCheckboxes = document.querySelectorAll('input[name^="skip_"]');
+function connectSkipCheckboxes() {
+  for (const checkbox of document.querySelectorAll('input[name^="skip_"]')) {
+    const index = checkbox.name.replace("skip_", "");
+    const answer = document.getElementById("answer_" + index);
+    if (!answer) {
+      continue;
+    }
 
-for (const checkbox of skipCheckboxes) {
-  const questionId = checkbox.name.replace("skip_", "");
-  const answerInput = document.getElementById(`answer_${questionId}`);
+    function updateAnswer() {
+      if (checkbox.checked) {
+        answer.value = "";
+      }
+      answer.disabled = checkbox.checked;
+    }
 
-  if (!answerInput) {
-    continue;
+    checkbox.addEventListener("change", updateAnswer);
+    updateAnswer();
   }
-
-  const updateAnswerInput = () => {
-    if (checkbox.checked) {
-      answerInput.value = "";
-    }
-    answerInput.disabled = checkbox.checked;
-  };
-
-  checkbox.addEventListener("change", updateAnswerInput);
-  updateAnswerInput();
 }
 
-const forms = document.querySelectorAll("form");
-const loadingOverlay = document.getElementById("loading-overlay");
-let isSubmitting = false;
+function preventDuplicateSubmissions() {
+  let submitting = false;
+  const overlay = document.getElementById("loading-overlay");
 
-for (const form of forms) {
-  form.addEventListener("submit", (event) => {
-    if (isSubmitting) {
-      event.preventDefault();
-      return;
-    }
+  for (const form of document.querySelectorAll("form")) {
+    form.addEventListener("submit", (event) => {
+      if (submitting) {
+        event.preventDefault();
+        return;
+      }
 
-    isSubmitting = true;
-    form.setAttribute("aria-busy", "true");
-    document.body.classList.add("is-loading");
+      submitting = true;
+      form.setAttribute("aria-busy", "true");
 
-    for (const button of form.querySelectorAll('button[type="submit"]')) {
-      button.disabled = true;
-      button.textContent = "Processing…";
-    }
+      for (const button of form.querySelectorAll('button[type="submit"]')) {
+        button.disabled = true;
+        button.textContent = "Processing…";
+      }
 
-    if (loadingOverlay) {
-      loadingOverlay.hidden = false;
-    }
-  });
+      if (overlay) {
+        overlay.hidden = false;
+      }
+    });
+  }
 }
+
+connectSkipCheckboxes();
+preventDuplicateSubmissions();
