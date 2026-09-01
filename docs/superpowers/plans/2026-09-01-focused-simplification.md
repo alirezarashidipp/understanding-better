@@ -626,7 +626,8 @@ review_id = re.search(r'name="review_id" value="([a-f0-9]+)"', start.text).group
 
 failed_refine = client.post("/refine", data={"review_id": review_id})
 assert failed_refine.status_code == 502
-assert 'action="/refine"' in failed_refine.text
+assert 'action="http://testserver/refine"' in failed_refine.text
+assert "Clarification questions" in failed_refine.text
 
 refined = client.post("/refine", data={"review_id": review_id})
 assert refined.status_code == 200
