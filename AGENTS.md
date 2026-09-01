@@ -65,6 +65,8 @@ All calls use the same top-level `LLMInput` and `LLMOutput` schemas. Fields owne
 - Keep the main data flow visible.
 - Use concrete names and small focused functions.
 - Validate all AI output with Pydantic.
+- Make the minimum change that solves the stated task; do not add extra features or speculative flexibility.
+- Add classes, layers, generics, factories, or inheritance only for a concrete current need.
 
 ## Verification
 

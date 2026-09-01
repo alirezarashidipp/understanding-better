@@ -15,3 +15,7 @@ metrics/*
 Output/
 Input/*
 !Input/.gitkeep
+
+# Generated architecture previews and validation artifacts.
+docs/mrm-runtime-architecture.html
+docs/mrm-runtime-architecture.visual-check*

@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MRM Model Review Runtime Architecture",
+    "locale": "en",
+    "output": "mrm-runtime-architecture.html",
+    "quality_profile": "showcase",
+    "viewBox": [1320, 760]
+  },
+  "components": [
+    {
+      "id": "reviewerBrowser",
+      "type": "frontend",
+      "label": "Reviewer Browser",
+      "sublabel": "Four-stage HTML workflow",
+      "pos": [40, 300],
+      "size": [170, 76],
+      "tag": "Start → Clarify → Approve → Review"
+    },
+    {
+      "id": "sourceFiles",
+      "type": "external",
+      "label": "Source Files",
+      "sublabel": "QM-*.txt + MRM_*.xlsx",
+      "pos": [270, 80],
+      "size": [190, 76]
+    },
+    {
+      "id": "metricCatalog",
+      "type": "external",
+      "label": "Approved Metric Catalog",
+      "sublabel": "metrics/metrics.md",
+      "pos": [520, 80],
+      "size": [200, 76]
+    },
+    {
+      "id": "fastapi",
+      "type": "backend",
+      "label": "FastAPI Routes",
+      "sublabel": "api.py · /start · /refine · /review",
+      "pos": [270, 300],
+      "size": [190, 76],
+      "tag": "Stage gates"
+    },
+    {
+      "id": "workflow",
+      "type": "backend",
+      "label": "Review Workflow",
+      "sublabel": "workflow.py · 3 Runnables",
+      "pos": [520, 300],
+      "size": [190, 76],
+      "tag": "Validate + one repair"
+    },
+    {
+      "id": "aiReviewer",
+      "type": "backend",
+      "label": "OpenAI Reviewer",
+      "sublabel": "ai_reviewer.py · Calls 1–4",
+      "pos": [770, 300],
+      "size": [190, 76],
+      "tag": "Structured output"
+    },
+    {
+      "id": "openai",
+      "type": "external",
+      "label": "OpenAI Responses API",
+      "sublabel": "Configured model",
+      "pos": [1020, 300],
+      "size": [190, 76]
+    },
+    {
+      "id": "reviewState",
+      "type": "database",
+      "label": "Pending Review State",
+      "sublabel": "In-process review_id map",
+      "pos": [270, 520],
+      "size": [190, 76],
+      "tag": "Lost on restart"
+    },
+    {
+      "id": "views",
+      "type": "backend",
+      "label": "HTML Views",
+      "sublabel": "views.py + Jinja templates",
+      "pos": [520, 520],
+      "size": [190, 76],
+      "tag": "Safe public errors"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Local FastAPI Process",
+      "wraps": ["fastapi", "workflow", "aiReviewer", "reviewState", "views"],
+      "pad": 28
+    }
+  ],
+  "connections": [
+    {
+      "id": "browserRequest",
+      "from": "reviewerBrowser",
+      "to": "fastapi",
+      "label": "HTTP forms / HTML responses",
+      "labelAt": [240, 390],
+      "variant": "emphasis"
+    },
+    {
+      "id": "uploadRequest",
+      "from": "sourceFiles",
+      "to": "fastapi",
+      "label": "multipart upload",
+      "labelAt": [365, 170]
+    },
+    {
+      "id": "catalogInput",
+      "from": "metricCatalog",
+      "to": "workflow",
+      "label": "canonical choices",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "workflowInput",
+      "from": "fastapi",
+      "to": "workflow",
+      "label": "LLMInput",
+      "variant": "emphasis"
+    },
+    {
+      "id": "reviewCall",
+      "from": "workflow",
+      "to": "aiReviewer",
+      "label": "validated Call 1–4",
+      "labelAt": [740, 390],
+      "variant": "emphasis"
+    },
+    {
+      "id": "providerRequest",
+      "from": "aiReviewer",
+      "to": "openai",
+      "label": "Responses API",
+      "labelAt": [990, 390],
+      "variant": "emphasis"
+    },
+    {
+      "id": "sessionState",
+      "from": "fastapi",
+      "to": "reviewState",
+      "label": "save stage + LLMOutput",
+      "labelAt": [365, 390]
+    },
+    {
+      "id": "renderPage",
+      "from": "fastapi",
+      "to": "views",
+      "label": "stage + result"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Deterministic stage control",
+      "items": [
+        "Call 2 runs only with a non-blank answer",
+        "Call 3 always finalizes understanding",
+        "Call 4 starts only after exact OK"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Validation boundary",
+      "items": [
+        "Catalog values are canonicalized server-side",
+        "Objective and Formula are assessed independently",
+        "Invalid structured output receives at most one repair"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Local MVP constraints",
+      "items": [
+        "Single-process, in-memory review state",
+        "No output files are written",
+        "Authentication and persistent storage are intentionally absent"
+      ]
+    }
+  ]
+}
