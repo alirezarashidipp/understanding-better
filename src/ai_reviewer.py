@@ -33,13 +33,18 @@ class OpenAIReviewer:
         instructions = prompt
         if repair_feedback:
             instructions += f"\n\nPrevious output validation error: {repair_feedback}"
+
+        request_options = {}
+        if not self.model.casefold().startswith("gpt-5.6"):
+            request_options["temperature"] = self.temperature
+
         response = self.client.responses.parse(
             model=self.model,
-            temperature=self.temperature,
             store=False,
             instructions=instructions,
             input=json.dumps(data.model_dump(mode="json", by_alias=True), ensure_ascii=False),
             text_format=LLMOutput,
+            **request_options,
         )
         if response.output_parsed is None:
             raise ValueError("OpenAI did not return a valid structured result.")

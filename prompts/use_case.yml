@@ -6,7 +6,7 @@ instructions: |-
   come from the selected category's Exmaples section.
 
   Return the complete LLMOutput schema. Fill the business understanding,
-  system_type, catalog selection, components, input, processing, output,
+  catalog selection, components, input, processing, output,
   understanding_confidence, and zero to four material questions. Set
   mrm_explanation to an empty string and set flow, expected_metrics, and
   metric_reviews to empty lists. Do not invent source facts or catalog values.

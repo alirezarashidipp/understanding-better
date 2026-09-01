@@ -3,7 +3,6 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 Status = Literal["OK", "IT IS EMPTY", "NEEDS REVISION"]
-SystemType = Literal["RAG", "LLM", "Traditional ML", "Agentic", "Hybrid", "Other"]
 
 
 class SystemMetric(BaseModel):
@@ -43,7 +42,6 @@ class MetricReview(BaseModel):
 
 class LLMOutput(BaseModel):
     business_use_case: str
-    system_type: SystemType
     main_category: str
     subcategory: str
     closest_application: str

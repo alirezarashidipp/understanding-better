@@ -3,151 +3,205 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151515">
   <title>MRM Model Review</title>
   <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
   <script src="{{ url_for('static', path='/app.js') }}" defer></script>
 </head>
-<body>
-<main>
-  <div class="card">
-    <h1>MRM Model Review</h1>
-    <p class="muted">Simple local use-case understanding and metric review MVP.</p>
-  </div>
+<body class="stage-{{ stage }}">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">MRM</span>
+      <span class="brand-copy">
+        <strong>Model Review Workspace</strong>
+        <small>Enterprise Governance</small>
+      </span>
+    </div>
+    <div class="session-status"><span aria-hidden="true"></span>Secure local session</div>
+  </header>
 
-  {% if error and stage != "error" %}
-    <div class="card error">
-      <h2>This step could not be completed</h2>
-      <p>{{ error }}</p>
-      <p>Your current review is still available. Correct anything needed and retry this step.</p>
-    </div>
-  {% endif %}
+  <div class="workspace">
+    <aside class="sidebar" aria-label="Review progress">
+      <p class="sidebar-label">Review workflow</p>
+      <ol class="step-list">
+        <li class="step {% if stage == 'start' %}active{% elif stage in ['questions', 'understanding', 'result'] %}complete{% endif %}">
+          <span class="step-number">01</span><span><strong>Source intake</strong><small>QM and workbook</small></span>
+        </li>
+        <li class="step {% if stage == 'questions' %}active{% elif stage in ['understanding', 'result'] %}complete{% endif %}">
+          <span class="step-number">02</span><span><strong>Clarification</strong><small>Confirm context</small></span>
+        </li>
+        <li class="step {% if stage == 'understanding' %}active{% elif stage == 'result' %}complete{% endif %}">
+          <span class="step-number">03</span><span><strong>MRM understanding</strong><small>Review and approve</small></span>
+        </li>
+        <li class="step {% if stage == 'result' %}active{% endif %}">
+          <span class="step-number">04</span><span><strong>Metric review</strong><small>Final assessment</small></span>
+        </li>
+      </ol>
+      <div class="sidebar-note">
+        <span aria-hidden="true">◆</span>
+        <div><strong>Local workspace</strong><p>Results stay in this browser session. No output files are created.</p></div>
+      </div>
+    </aside>
 
-  {% if stage == "start" %}
-    <div class="card">
-      <h2>Ready to review</h2>
-      <p>Select the QM text file and developer metric workbook for this review.</p>
-      <form method="post" action="{{ url_for('start') }}" enctype="multipart/form-data">
-        <label for="qm_file">QM source file (QM-*.txt)</label>
-        <input id="qm_file" name="qm_file" type="file" accept=".txt" required>
-        <label for="workbook_file">Developer workbook (MRM_*.xlsx)</label>
-        <input id="workbook_file" name="workbook_file" type="file" accept=".xlsx" required>
-        <button type="submit">Start Review</button>
-      </form>
-    </div>
-  {% elif stage == "questions" %}
-    <div class="card">
-      <h2>Current understanding</h2>
-      <p><strong>Business use case:</strong> {{ result.business_use_case }}</p>
-      <p><strong>System type:</strong> {{ result.system_type }}</p>
-      <p><strong>Main category:</strong> {{ result.main_category }}</p>
-      <p><strong>Main subcategory:</strong> {{ result.subcategory }}</p>
-      <p><strong>Closest application:</strong> {{ result.closest_application }}</p>
-      <p><strong>Understanding confidence:</strong> {{ result.understanding_confidence }}%</p>
-      <p><strong>Flow:</strong> {{ result.input }} → {{ result.processing }} → {{ result.output }}</p>
-    </div>
-    <form method="post" action="{{ url_for('refine') }}">
-      <input type="hidden" name="review_id" value="{{ review_id }}">
-      {% for question in result.questions %}
-        <div class="card">
-          <label for="answer_{{ loop.index0 }}">{{ question }}</label>
-          <input id="answer_{{ loop.index0 }}" name="answer_{{ loop.index0 }}" type="text">
-          <label class="skip">
-            <input name="skip_{{ loop.index0 }}" type="checkbox"> Skip
-          </label>
+    <main class="main-content">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Model Risk Management</p>
+          <h1>MRM Model Review</h1>
+          <p>Structured use-case understanding and independent metric assessment.</p>
         </div>
-      {% else %}
-        <div class="card">
-          <p>The TXT contains enough information. No clarification questions are needed.</p>
+        <div class="stage-pill">
+          <span>Current stage</span>
+          <strong>{% if stage == "start" %}Source intake{% elif stage == "questions" %}Clarification{% elif stage == "understanding" %}MRM understanding{% elif stage == "result" %}Metric review{% else %}Attention required{% endif %}</strong>
         </div>
-      {% endfor %}
-      <button type="submit">Next</button>
-    </form>
-  {% elif stage == "understanding" %}
-    <div class="card">
-      <h2>Final MRM understanding</h2>
-      {% if result.mrm_explanation %}<p>{{ result.mrm_explanation }}</p>{% endif %}
-      <p><strong>Business use case:</strong> {{ result.business_use_case }}</p>
-      <p><strong>System type:</strong> {{ result.system_type }}</p>
-      <p><strong>Main category:</strong> {{ result.main_category }}</p>
-      <p><strong>Main subcategory:</strong> {{ result.subcategory }}</p>
-      <p><strong>Closest application:</strong> {{ result.closest_application }}</p>
-      {% if result.flow %}
-        <div class="flow" aria-label="Simple business and risk flow">
-          {% for node in result.flow %}
-            <span class="node">{{ node }}</span>{% if not loop.last %}<span>→</span>{% endif %}
-          {% endfor %}
-        </div>
+      </header>
+
+      {% if error and stage != "error" %}
+        <section class="alert" role="alert">
+          <span class="alert-mark" aria-hidden="true">!</span>
+          <div><h2>This step could not be completed</h2><p>{{ error }}</p><small>Your current review is unchanged. Correct anything needed and retry.</small></div>
+        </section>
       {% endif %}
-    </div>
-    <form method="post" action="{{ url_for('review') }}">
-      <input type="hidden" name="review_id" value="{{ review_id }}">
-      <button type="submit">OK</button>
-    </form>
-  {% elif stage == "result" %}
-    <div class="card">
-      <h2>MRM summary</h2>
-      {% if result.mrm_explanation %}<p>{{ result.mrm_explanation }}</p>{% endif %}
-      <p><strong>Business use case:</strong> {{ result.business_use_case }}</p>
-      <p><strong>System type:</strong> {{ result.system_type }}</p>
-      <p><strong>Main category:</strong> {{ result.main_category }}</p>
-      <p><strong>Main subcategory:</strong> {{ result.subcategory }}</p>
-      <p><strong>Closest application:</strong> {{ result.closest_application }}</p>
-      {% if result.flow %}
-        <div class="flow" aria-label="Simple business flow">
-          {% for node in result.flow %}
-            <span class="node">{{ node }}</span>{% if not loop.last %}<span>→</span>{% endif %}
-          {% endfor %}
-        </div>
-      {% endif %}
-    </div>
 
-    <div class="card">
-      <h2>Expected metrics</h2>
-      {% if result.expected_metrics %}
-        <div class="table-wrap"><table>
-          <thead><tr><th>Expected Metric</th><th>Why Needed</th><th>Proposed Test Objective</th><th>Proposed Formula</th></tr></thead>
-          <tbody>
-          {% for metric in result.expected_metrics %}
-            <tr><td>{{ metric.name }}</td><td>{{ metric.applicability_reason }}</td><td>{{ metric.test_objective }}</td><td>{{ metric.calculation_method }}</td></tr>
-          {% endfor %}
-          </tbody>
-        </table></div>
-      {% else %}
-        <p>No additional expected metrics were identified.</p>
-      {% endif %}
-    </div>
-
-    <div class="card">
-      <h2>Metric review</h2>
-      {% for row in result.metric_reviews %}
-        <section class="review-row">
-          <h3>{{ row.metric }}</h3>
-          <div class="review-fields">
-            <div>
-              <h4>Test Objective: <span class="status">{{ row.objective_status }}</span></h4>
-              {% if row.objective_reason %}<p><strong>Reason:</strong> {{ row.objective_reason }}</p>{% endif %}
-              {% if row.objective_revised %}<p><strong>Revised:</strong> {{ row.objective_revised }}</p>{% endif %}
-              {% if row.objective_questions %}<p><strong>Questions:</strong> {{ row.objective_questions | join('; ') }}</p>{% endif %}
+      {% if stage == "start" %}
+        <section class="panel panel-accent">
+          <div class="panel-heading">
+            <span class="section-number">01</span>
+            <div><p class="panel-kicker">Document intake</p><h2>Start a new review</h2><p>Select the approved QM text and developer metric workbook.</p></div>
+          </div>
+          <form method="post" action="{{ url_for('start') }}" enctype="multipart/form-data">
+            <div class="upload-grid">
+              <label class="file-field" for="qm_file">
+                <span class="file-type">TXT</span>
+                <span class="file-copy"><strong>QM source file</strong><small>Required: QM-*.txt</small></span>
+                <input id="qm_file" name="qm_file" type="file" accept=".txt" required>
+              </label>
+              <label class="file-field" for="workbook_file">
+                <span class="file-type">XLSX</span>
+                <span class="file-copy"><strong>Developer workbook</strong><small>Required: MRM_*.xlsx</small></span>
+                <input id="workbook_file" name="workbook_file" type="file" accept=".xlsx" required>
+              </label>
             </div>
-            <div>
-              <h4>Formula: <span class="status">{{ row.formula_status }}</span></h4>
-              {% if row.formula_reason %}<p><strong>Reason:</strong> {{ row.formula_reason }}</p>{% endif %}
-              {% if row.formula_revised %}<p><strong>Revised:</strong> {{ row.formula_revised }}</p>{% endif %}
-              {% if row.formula_questions %}<p><strong>Questions:</strong> {{ row.formula_questions | join('; ') }}</p>{% endif %}
-            </div>
+            <div class="form-actions"><p>Both documents are required to begin.</p><button type="submit">Start review <span aria-hidden="true">→</span></button></div>
+          </form>
+        </section>
+
+      {% elif stage == "questions" %}
+        <section class="panel">
+          <div class="panel-heading compact">
+            <span class="section-number">02</span>
+            <div><p class="panel-kicker">Initial assessment</p><h2>Current understanding</h2><p>Review the extracted context before answering.</p></div>
+          </div>
+          <div class="summary-grid">
+            <div class="summary-item wide"><span>Business use case</span><strong>{{ result.business_use_case }}</strong></div>
+            <div class="summary-item"><span>Main category</span><strong>{{ result.main_category }}</strong></div>
+            <div class="summary-item"><span>Main subcategory</span><strong>{{ result.subcategory }}</strong></div>
+            <div class="summary-item"><span>Closest application</span><strong>{{ result.closest_application }}</strong></div>
+            <div class="summary-item confidence"><span>Understanding confidence</span><strong>{{ result.understanding_confidence }}%</strong><div><i style="width: {{ result.understanding_confidence }}%"></i></div></div>
+          </div>
+          <div class="flow-block"><span class="flow-label">Current flow</span><div class="flow"><span class="node">{{ result.input }}</span><b>→</b><span class="node">{{ result.processing }}</span><b>→</b><span class="node">{{ result.output }}</span></div></div>
+        </section>
+
+        <form method="post" action="{{ url_for('refine') }}">
+          <input type="hidden" name="review_id" value="{{ review_id }}">
+          <div class="section-heading"><div><p class="panel-kicker">Reviewer input</p><h2>Clarification questions</h2></div><span class="item-count">{{ result.questions | length }} questions</span></div>
+          {% for question in result.questions %}
+            <section class="panel question-card">
+              <span class="question-number">Q{{ loop.index }}</span>
+              <div class="question-content">
+                <label for="answer_{{ loop.index0 }}">{{ question }}</label>
+                <input id="answer_{{ loop.index0 }}" name="answer_{{ loop.index0 }}" type="text" placeholder="Enter a concise answer">
+                <label class="skip"><input name="skip_{{ loop.index0 }}" type="checkbox"><span>Skip this question</span></label>
+              </div>
+            </section>
+          {% else %}
+            <section class="panel empty-state"><span>✓</span><div><h3>No clarification required</h3><p>The QM source contains enough information to continue.</p></div></section>
+          {% endfor %}
+          <div class="form-actions action-panel"><p>Continue to generate the final MRM understanding.</p><button type="submit">Continue <span aria-hidden="true">→</span></button></div>
+        </form>
+
+      {% elif stage == "understanding" %}
+        <section class="panel panel-accent">
+          <div class="panel-heading compact">
+            <span class="section-number">03</span>
+            <div><p class="panel-kicker">Approval checkpoint</p><h2>Final MRM understanding</h2><p>Confirm this interpretation before metric review.</p></div>
+          </div>
+          {% if result.mrm_explanation %}<div class="narrative"><span>MRM perspective</span><p>{{ result.mrm_explanation }}</p></div>{% endif %}
+          <div class="summary-grid">
+            <div class="summary-item wide"><span>Business use case</span><strong>{{ result.business_use_case }}</strong></div>
+            <div class="summary-item"><span>Main category</span><strong>{{ result.main_category }}</strong></div>
+            <div class="summary-item"><span>Main subcategory</span><strong>{{ result.subcategory }}</strong></div>
+            <div class="summary-item"><span>Closest application</span><strong>{{ result.closest_application }}</strong></div>
+          </div>
+          {% if result.flow %}<div class="flow-block"><span class="flow-label">Business and risk flow</span><div class="flow">{% for node in result.flow %}<span class="node">{{ node }}</span>{% if not loop.last %}<b>→</b>{% endif %}{% endfor %}</div></div>{% endif %}
+        </section>
+        <form class="approval-bar" method="post" action="{{ url_for('review') }}">
+          <input type="hidden" name="review_id" value="{{ review_id }}">
+          <div><strong>Ready for metric assessment?</strong><p>Select OK to approve this understanding and continue.</p></div>
+          <button type="submit">OK</button>
+        </form>
+
+      {% elif stage == "result" %}
+        <section class="panel">
+          <div class="panel-heading compact">
+            <span class="section-number">04</span>
+            <div><p class="panel-kicker">Completed assessment</p><h2>MRM summary</h2><p>Final understanding and metric-level review.</p></div>
+          </div>
+          {% if result.mrm_explanation %}<div class="narrative"><span>MRM perspective</span><p>{{ result.mrm_explanation }}</p></div>{% endif %}
+          <div class="summary-grid">
+            <div class="summary-item wide"><span>Business use case</span><strong>{{ result.business_use_case }}</strong></div>
+            <div class="summary-item"><span>Main category</span><strong>{{ result.main_category }}</strong></div>
+            <div class="summary-item"><span>Main subcategory</span><strong>{{ result.subcategory }}</strong></div>
+            <div class="summary-item"><span>Closest application</span><strong>{{ result.closest_application }}</strong></div>
+          </div>
+          {% if result.flow %}<div class="flow-block"><span class="flow-label">Approved flow</span><div class="flow">{% for node in result.flow %}<span class="node">{{ node }}</span>{% if not loop.last %}<b>→</b>{% endif %}{% endfor %}</div></div>{% endif %}
+        </section>
+
+        <section class="panel">
+          <div class="section-heading bordered"><div><p class="panel-kicker">Catalog recommendations</p><h2>Expected metrics</h2><p>Additional catalog metrics proposed beyond the uploaded workbook.</p></div><span class="item-count">{{ result.expected_metrics | length }} proposed</span></div>
+          {% if result.expected_metrics %}
+            <div class="table-wrap"><table><thead><tr><th>Expected metric</th><th>Why needed</th><th>Proposed test objective</th><th>Proposed formula</th></tr></thead><tbody>
+            {% for metric in result.expected_metrics %}<tr><td><strong>{{ metric.name }}</strong></td><td>{{ metric.applicability_reason }}</td><td>{{ metric.test_objective }}</td><td>{{ metric.calculation_method }}</td></tr>{% endfor %}
+            </tbody></table></div>
+          {% else %}
+            <div class="empty-state inline"><span>✓</span><div><h3>No additional metrics identified</h3><p>The workbook covers the relevant catalog metrics.</p></div></div>
+          {% endif %}
+        </section>
+
+        <section class="panel">
+          <div class="section-heading bordered"><div><p class="panel-kicker">Workbook assessment</p><h2>Metric review</h2><p>Independent assessment of each Objective and Formula.</p></div><span class="item-count">{{ result.metric_reviews | length }} reviewed</span></div>
+          <div class="review-list">
+            {% for row in result.metric_reviews %}
+              <article class="review-row">
+                <header><span>{{ "%02d" | format(loop.index) }}</span><h3>{{ row.metric }}</h3></header>
+                <div class="review-fields">
+                  <section class="review-field">
+                    <div class="field-header"><h4>Test Objective</h4><span class="status" data-status="{{ row.objective_status }}">{{ row.objective_status }}</span></div>
+                    {% if row.objective_reason %}<p><strong>Reason</strong>{{ row.objective_reason }}</p>{% endif %}
+                    {% if row.objective_revised %}<p><strong>Revised text</strong>{{ row.objective_revised }}</p>{% endif %}
+                    {% if row.objective_questions %}<p><strong>Questions</strong>{{ row.objective_questions | join('; ') }}</p>{% endif %}
+                  </section>
+                  <section class="review-field">
+                    <div class="field-header"><h4>Calculation Method / Formula</h4><span class="status" data-status="{{ row.formula_status }}">{{ row.formula_status }}</span></div>
+                    {% if row.formula_reason %}<p><strong>Reason</strong>{{ row.formula_reason }}</p>{% endif %}
+                    {% if row.formula_revised %}<p><strong>Revised text</strong>{{ row.formula_revised }}</p>{% endif %}
+                    {% if row.formula_questions %}<p><strong>Questions</strong>{{ row.formula_questions | join('; ') }}</p>{% endif %}
+                  </section>
+                </div>
+              </article>
+            {% else %}
+              <div class="empty-state inline"><span>—</span><div><h3>No system metrics supplied</h3><p>No workbook rows are available for assessment.</p></div></div>
+            {% endfor %}
           </div>
         </section>
-      {% else %}
-        <p>No system metrics were supplied.</p>
-      {% endfor %}
-    </div>
-  {% elif stage == "error" %}
-    <div class="card error">
-      <h2>Review could not continue</h2>
-      <p>{{ error }}</p>
-      <a class="button" href="{{ url_for('index') }}">Back</a>
-    </div>
-  {% endif %}
-</main>
+
+      {% elif stage == "error" %}
+        <section class="panel error-panel" role="alert">
+          <span class="error-code">!</span>
+          <div><p class="panel-kicker">Review interrupted</p><h2>Review could not continue</h2><p>{{ error }}</p><a class="button" href="{{ url_for('index') }}">Return to start</a></div>
+        </section>
+      {% endif %}
+    </main>
+  </div>
 </body>
 </html>
