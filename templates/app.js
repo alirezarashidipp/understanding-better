@@ -18,3 +18,29 @@ for (const checkbox of skipCheckboxes) {
   checkbox.addEventListener("change", updateAnswerInput);
   updateAnswerInput();
 }
+
+const forms = document.querySelectorAll("form");
+const loadingOverlay = document.getElementById("loading-overlay");
+let isSubmitting = false;
+
+for (const form of forms) {
+  form.addEventListener("submit", (event) => {
+    if (isSubmitting) {
+      event.preventDefault();
+      return;
+    }
+
+    isSubmitting = true;
+    form.setAttribute("aria-busy", "true");
+    document.body.classList.add("is-loading");
+
+    for (const button of form.querySelectorAll('button[type="submit"]')) {
+      button.disabled = true;
+      button.textContent = "Processing…";
+    }
+
+    if (loadingOverlay) {
+      loadingOverlay.hidden = false;
+    }
+  });
+}

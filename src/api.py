@@ -6,25 +6,23 @@ from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from openai import APIConnectionError, APIStatusError, AuthenticationError, RateLimitError
-from pydantic import ValidationError
 from starlette.datastructures import FormData
 
 from ai_reviewer import OpenAIReviewer
 from config import AppSettings
 from metric_catalog_reader import parse_global_metrics, read_global_metrics
-from schemas import ExtraInfo, LLMInput, LLMOutput, SystemMetric, UploadedFileData
+from schemas import ExtraInfo, LLMInput, LLMOutput, UploadedFileData
 from user_input_reader import read_user_inputs
+from views import render_page
 from workflow import build_workflows
 
 ReviewStage = Literal["questions", "understanding", "result"]
+REVIEW_NOT_FOUND = "This review was not found. Start a new review."
 
 
 @dataclass
 class PendingReview:
-    system_main_info: str
-    global_metrics: str
-    developer_metrics: list[SystemMetric]
+    data: LLMInput
     result: LLMOutput
     stage: ReviewStage
 
@@ -50,6 +48,24 @@ def create_app(
     templates = Jinja2Templates(directory=active_settings.root / "templates")
     reviews: dict[str, PendingReview] = {}
 
+    def render_review(
+        request: Request,
+        review_id: str,
+        pending: PendingReview,
+        *,
+        error: Exception | str | None = None,
+        status_code: int = 200,
+    ) -> HTMLResponse:
+        return render_page(
+            templates,
+            request,
+            pending.stage,
+            review_id=review_id,
+            result=pending.result,
+            error=error,
+            status_code=status_code,
+        )
+
     app = FastAPI(title="MRM Model Review", docs_url="/api/docs", redoc_url=None)
     app.mount(
         "/static",
@@ -59,7 +75,7 @@ def create_app(
 
     @app.get("/", response_class=HTMLResponse, name="index")
     async def index(request: Request) -> HTMLResponse:
-        return _page(templates, request, stage="start")
+        return render_page(templates, request, "start")
 
     @app.get("/health", name="health")
     async def health() -> dict[str, str]:
@@ -87,26 +103,18 @@ def create_app(
             )
             result = start_workflow.invoke(workflow_input)
         except Exception as error:
-            return _page(
-                templates,
-                request,
-                stage="error",
-                error=_public_error(error),
-                status_code=_status_code(error),
-            )
+            return render_page(templates, request, "error", error=error)
 
         review_id = uuid4().hex
         reviews[review_id] = PendingReview(
-            system_main_info=system_main_info,
-            global_metrics=global_metrics,
-            developer_metrics=developer_metrics,
+            data=workflow_input,
             result=result,
             stage="questions",
         )
-        return _page(
+        return render_page(
             templates,
             request,
-            stage="questions",
+            "questions",
             review_id=review_id,
             result=result,
         )
@@ -117,55 +125,38 @@ def create_app(
         review_id = str(form.get("review_id", ""))
         pending = reviews.get(review_id)
         if pending is None:
-            return _page(
+            return render_page(
                 templates,
                 request,
-                stage="error",
-                error="This review was not found. Start a new review.",
+                "error",
+                error=REVIEW_NOT_FOUND,
                 status_code=404,
             )
         if pending.stage != "questions":
-            return _page(
-                templates,
+            return render_review(
                 request,
-                stage=pending.stage,
-                review_id=review_id,
-                result=pending.result,
+                review_id,
+                pending,
                 error="This review has already moved past clarification.",
                 status_code=409,
             )
 
         answers = _answered_questions(form, pending.result.questions)
-        workflow_input = LLMInput(
-            system_main_info=pending.system_main_info,
-            global_metrics=pending.global_metrics,
-            system_metrics=pending.developer_metrics,
-            system_extra_info=answers,
-            previous_output=pending.result,
+        workflow_input = pending.data.model_copy(
+            update={
+                "system_extra_info": answers,
+                "previous_output": pending.result,
+            }
         )
 
         try:
             result = refine_workflow.invoke(workflow_input)
         except Exception as error:
-            return _page(
-                templates,
-                request,
-                stage="questions",
-                review_id=review_id,
-                result=pending.result,
-                error=_public_error(error),
-                status_code=_status_code(error),
-            )
+            return render_review(request, review_id, pending, error=error)
 
         pending.result = result
         pending.stage = "understanding"
-        return _page(
-            templates,
-            request,
-            stage="understanding",
-            review_id=review_id,
-            result=result,
-        )
+        return render_review(request, review_id, pending)
 
     @app.post("/review", response_class=HTMLResponse, name="review")
     async def review(request: Request) -> HTMLResponse:
@@ -173,53 +164,31 @@ def create_app(
         review_id = str(form.get("review_id", ""))
         pending = reviews.get(review_id)
         if pending is None:
-            return _page(
+            return render_page(
                 templates,
                 request,
-                stage="error",
-                error="This review was not found. Start a new review.",
+                "error",
+                error=REVIEW_NOT_FOUND,
                 status_code=404,
             )
         if pending.stage != "understanding":
-            return _page(
-                templates,
+            return render_review(
                 request,
-                stage=pending.stage,
-                review_id=review_id,
-                result=pending.result,
+                review_id,
+                pending,
                 error="Metric review can start only after the final understanding is shown.",
                 status_code=409,
             )
 
-        workflow_input = LLMInput(
-            system_main_info=pending.system_main_info,
-            global_metrics=pending.global_metrics,
-            system_metrics=pending.developer_metrics,
-            system_extra_info=[],
-            previous_output=pending.result,
-        )
+        workflow_input = pending.data.model_copy(update={"previous_output": pending.result})
         try:
             result = review_workflow.invoke(workflow_input)
         except Exception as error:
-            return _page(
-                templates,
-                request,
-                stage="understanding",
-                review_id=review_id,
-                result=pending.result,
-                error=_public_error(error),
-                status_code=_status_code(error),
-            )
+            return render_review(request, review_id, pending, error=error)
 
         pending.result = result
         pending.stage = "result"
-        return _page(
-            templates,
-            request,
-            stage="result",
-            review_id=review_id,
-            result=result,
-        )
+        return render_review(request, review_id, pending)
 
     return app
 
@@ -243,39 +212,3 @@ def _answered_questions(form: FormData, questions: list[str]) -> list[ExtraInfo]
         if answer:
             answers.append(ExtraInfo(question=question, answer=answer))
     return answers
-
-
-def _page(
-    templates: Jinja2Templates,
-    request: Request,
-    *,
-    stage: str,
-    status_code: int = 200,
-    **context: object,
-) -> HTMLResponse:
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={"stage": stage, **context},
-        status_code=status_code,
-    )
-
-
-def _public_error(error: Exception) -> str:
-    if isinstance(error, AuthenticationError):
-        return "OpenAI authentication failed. Check OPENAI_API_KEY."
-    if isinstance(error, RateLimitError):
-        return "OpenAI could not complete the request because of quota or rate limits."
-    if isinstance(error, APIConnectionError):
-        return "OpenAI could not be reached. Check the network connection and retry."
-    if isinstance(error, APIStatusError):
-        return f"OpenAI request failed with status {error.status_code}. Retry this step."
-    if isinstance(error, (ValueError, ValidationError)):
-        return str(error)
-    return "An unexpected internal error occurred. Retry this step."
-
-
-def _status_code(error: Exception) -> int:
-    if isinstance(error, (ValueError, ValidationError)):
-        return 400
-    return 502
