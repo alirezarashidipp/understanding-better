@@ -91,8 +91,8 @@ def create_app(
             qm_upload = await _uploaded_file_data(qm_file)
             workbook_upload = await _uploaded_file_data(workbook_file)
             system_main_info, developer_metrics = read_user_inputs(
-                [qm_upload],
-                [workbook_upload],
+                qm_upload,
+                workbook_upload,
             )
             workflow_input = LLMInput(
                 system_main_info=system_main_info,

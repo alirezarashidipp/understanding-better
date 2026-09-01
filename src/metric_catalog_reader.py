@@ -1,10 +1,10 @@
 from pathlib import Path
 
-import yaml
-
-SECTIONS = yaml.safe_load(
-    (Path(__file__).resolve().parent.parent / "input_format.yml").read_text(encoding="utf-8")
-)["global_metrics_format"]["sections"]
+SECTIONS = {
+    "subcategories": "Main Subcategories",
+    "examples": "Exmaples",
+    "metrics": "Metrics",
+}
 Catalog = dict[str, dict[str, list[str]]]
 
 

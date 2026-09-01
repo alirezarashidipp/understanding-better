@@ -1,35 +1,30 @@
 import re
-from collections.abc import Sequence
 from io import BytesIO
 from pathlib import Path
 
-import yaml
 from openpyxl import load_workbook
 
 from schemas import SystemMetric, UploadedFileData
 
-FORMAT = yaml.safe_load(
-    (Path(__file__).resolve().parent.parent / "input_format.yml").read_text(encoding="utf-8")
-)["user_inputs"]
-QM_FILENAME = re.compile(FORMAT["qm_filename"])
-WORKBOOK_FILENAME = re.compile(FORMAT["workbook_filename"])
-COLUMNS = FORMAT["workbook_columns"]
-EMPTY_METRICS = {value.casefold() for value in FORMAT["empty_metric_placeholders"]}
+QM_FILENAME = re.compile(r"QM-.+\.txt")
+WORKBOOK_FILENAME = re.compile(r"MRM_.+\.xlsx")
+WORKBOOK_COLUMNS = {
+    "monitoring_metric": ["Monitoring Metric", "Metric"],
+    "test_objective": ["Test Objective"],
+    "calculation_method": [
+        "Calculation Method/Formula",
+        "Calcution Method/Formula",
+        "Calculation Method / Formula",
+    ],
+}
+EMPTY_METRICS = {"any other(s)"}
 
 
 def read_user_inputs(
-    qm_files: Sequence[UploadedFileData],
-    workbook_files: Sequence[UploadedFileData],
+    qm_file: UploadedFileData,
+    workbook_file: UploadedFileData,
 ) -> tuple[str, list[SystemMetric]]:
-    qm_file = _only_file(qm_files, "QM text file")
-    workbook_file = _only_file(workbook_files, "developer workbook")
     return _read_qm(qm_file), _read_workbook(workbook_file)
-
-
-def _only_file(files: Sequence[UploadedFileData], label: str) -> UploadedFileData:
-    if len(files) != 1:
-        raise ValueError(f"Select exactly one {label}.")
-    return files[0]
 
 
 def _read_qm(upload: UploadedFileData) -> str:
@@ -62,7 +57,7 @@ def _read_workbook(upload: UploadedFileData) -> list[SystemMetric]:
         header_names = [str(value).strip() if value is not None else "" for value in headers]
         positions = {
             field: _column_position(header_names, aliases, field)
-            for field, aliases in COLUMNS.items()
+            for field, aliases in WORKBOOK_COLUMNS.items()
         }
 
         metrics = []
