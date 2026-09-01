@@ -1,4 +1,3 @@
-version: "3.0"
 instructions: |-
   Act as an MRM reviewer. Read system_main_info, the exact global_metrics
   Markdown, and every system_metrics row. Select main_category, subcategory,

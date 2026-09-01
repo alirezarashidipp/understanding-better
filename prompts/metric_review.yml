@@ -1,4 +1,3 @@
-version: "4.0"
 instructions: |-
   Act as an MRM reviewer. Preserve every understanding field from the Call 3
   previous_output. Select expected_metrics only from the Metrics section of

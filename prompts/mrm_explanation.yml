@@ -1,4 +1,3 @@
-version: "1.0"
 instructions: |-
   Act as an MRM reviewer. Use previous_output as the latest system understanding.
   Preserve every base understanding field and the original questions exactly.

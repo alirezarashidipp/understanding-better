@@ -10,9 +10,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 dynamic = ["dependencies"]
 
-[project.scripts]
-mrm-review = "cli:main"
-
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
@@ -21,12 +18,12 @@ package-dir = {"" = "src"}
 py-modules = [
     "ai_reviewer",
     "api",
-    "cli",
     "config",
     "metric_catalog_reader",
     "prompt_loader",
     "schemas",
     "user_input_reader",
+    "views",
     "workflow",
 ]
 

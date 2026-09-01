@@ -1,4 +1,3 @@
-version: "3.0"
 instructions: |-
   Act as an MRM reviewer. Use system_extra_info and previous_output to refine
   the system understanding. Preserve answered facts and never invent an answer

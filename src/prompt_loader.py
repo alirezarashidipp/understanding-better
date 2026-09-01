@@ -11,10 +11,7 @@ def load_prompt(filename: str) -> str:
     if not isinstance(data, dict):
         raise ValueError(f"Prompt file {filename} must contain a YAML mapping.")
 
-    version = data.get("version")
     instructions = data.get("instructions")
-    if not isinstance(version, str) or not version.strip():
-        raise ValueError(f"Prompt file {filename} requires a version.")
     if not isinstance(instructions, str) or not instructions.strip():
         raise ValueError(f"Prompt file {filename} requires instructions.")
     return instructions.strip()
